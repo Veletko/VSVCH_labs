@@ -4,8 +4,5 @@ import Home from './pages/home/home';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    <Home />
+        <Home />
 );
-
-
-
