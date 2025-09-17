@@ -3,7 +3,7 @@ import Header from '../../components/header/header.js';
 import Footer from '../../components/footer/footer.js';
 import Banner from '../../components/banner/banner.js';
 import CardSection from '../../components/cardSection/cardSection.js';
-
+import AboutUs from '../../components/aboutUs/aboutUs.js';
 class Home extends React.Component{
     render () {
         const cardInfo = [
@@ -16,6 +16,7 @@ class Home extends React.Component{
                 <Header /> 
                 <Banner />
                 <CardSection cardInfo={cardInfo}/>
+                <AboutUs />
                 <Footer />
             </div>
         )
