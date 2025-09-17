@@ -2,7 +2,8 @@ import React from 'react';
 import '../../pages/home/home.css'
 
 class Card extends React.Component {
-    render (title, description) {
+    render () {
+        const {title, description} = this.props
         return ( 
              <div class="card">
                 <img src="/img/card-image1.png" alt="service"/>
