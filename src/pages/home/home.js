@@ -4,6 +4,8 @@ import Footer from '../../components/footer/footer.js';
 import Banner from '../../components/banner/banner.js';
 import CardSection from '../../components/cardSection/cardSection.js';
 import AboutUs from '../../components/aboutUs/aboutUs.js';
+
+
 class Home extends React.Component{
     render () {
         const cardInfo = [

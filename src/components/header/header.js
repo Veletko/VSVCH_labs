@@ -32,7 +32,7 @@ class Header extends React.Component{
                     <nav>
                         <a href="/pages/login.html" data-i18n="header.nav.login">Log in</a>
                         <a href="/pages/homepage.html" data-i18n="header.nav.home">Home</a>
-                        <a href="/pages/services.html" data-i18n="header.nav.services">Services</a>
+                        <a href="/public/pages/service.html" data-i18n="header.nav.services">Services</a>
                         <a href="/pages/personalAccount.html" id="account-link" data-i18n="header.nav.account">Personal Account</a>
                     </nav>
                     <button className="burger-menu">
