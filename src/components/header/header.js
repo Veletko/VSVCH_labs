@@ -1,49 +1,48 @@
 import React from 'react';
-import "./header-footer.css"
-import "/универ/всвч/src/css/style.css"
-import Logo from "../../img/Logo.svg"
-import Phone from "../../img/phone.png"
-import Sun from "../../img/sun.png"
-import Basket from "../../img/basket.png"
+import "./header-footer.css";
+import "/универ/всвч/src/css/style.css";
+import Logo from "../../img/Logo.svg";
+import Phone from "../../img/phone.png";
+import Sun from "../../img/sun.png";
+import Basket from "../../img/basket.png";
 
-class Header extends React.Component{
-    render () {
-        return (
-            <header> 
-                <div className="header-logo-container">
-                    <img src={Logo} alt="logo" className="logo logo-light" />
-                    <div className="header-img-container">
-                        <img src={Phone} alt="phone" />
-                        <p data-i18n="common.phoneText">Call Us - (+22) 123 456 7890</p>
-                    </div>
+const Header = () => {
+    return (
+        <header> 
+            <div className="header-logo-container">
+                <img src={Logo} alt="logo" className="logo logo-light" />
+                <div className="header-img-container">
+                    <img src={Phone} alt="phone" />
+                    <p data-i18n="common.phoneText">Call Us - (+22) 123 456 7890</p>
                 </div>
-                <div className="header-auth-buttons">
-                    <label className="theme-toggle element">
-                        <input type="checkbox" hidden />
-                        <img className="sun" src={Sun} alt="sun" />
+            </div>
+            <div className="header-auth-buttons">
+                <label className="theme-toggle element">
+                    <input type="checkbox" hidden />
+                    <img className="sun" src={Sun} alt="sun" />
+                </label>
+                <div className="language-selector element">
+                    <input type="checkbox" id="lang-switch" className="language-checkbox" hidden />
+                    <label htmlFor="lang-switch" className="language-toggle">
+                        <span className="language-option ru">RU</span>
+                        <span className="language-option en">EN</span>
                     </label>
-                    <div className="language-selector element">
-                        <input type="checkbox" id="lang-switch" className="language-checkbox" hidden />
-                        <label htmlFor="lang-switch" className="language-toggle">
-                            <span className="language-option ru">RU</span>
-                            <span className="language-option en">EN</span>
-                        </label>
-                    </div>
-                    <nav>
-                        <a href="/pages/login.html" data-i18n="header.nav.login">Log in</a>
-                        <a href="/pages/homepage.html" data-i18n="header.nav.home">Home</a>
-                        <a href="/public/pages/service.html" data-i18n="header.nav.services">Services</a>
-                        <a href="/pages/personalAccount.html" id="account-link" data-i18n="header.nav.account">Personal Account</a>
-                    </nav>
-                    <button className="burger-menu">
-                        <span></span>
-                    </button>
-                    <a href="/pages/cart.html" id="basket-link">
-                        <img className="basket" src={Basket} alt="basket" />
-                    </a>
                 </div>
-            </header>
-        )
-    }
-}
-export default Header
+                <nav>
+                    <a href="/pages/login.html" data-i18n="header.nav.login">Log in</a>
+                    <a href="/pages/homepage.html" data-i18n="header.nav.home">Home</a>
+                    <a href="/public/pages/service.html" data-i18n="header.nav.services">Services</a>
+                    <a href="/pages/personalAccount.html" id="account-link" data-i18n="header.nav.account">Personal Account</a>
+                </nav>
+                <button className="burger-menu">
+                    <span></span>
+                </button>
+                <a href="/pages/cart.html" id="basket-link">
+                    <img className="basket" src={Basket} alt="basket" />
+                </a>
+            </div>
+        </header>
+    );
+};
+
+export default Header;
