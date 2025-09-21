@@ -6,9 +6,8 @@ import X_white from "../../img/X_white.png"
 import In_white from "../../img/in_white.png"
 import Instagram_white from "../../img/instagram_white.png"
 
-class Footer extends React.Component {
-    render () {
-        return (
+const Footer = () => {
+    return (
             <footer>
             <div class="footer-top-container">
             <div class="footer-top-logo-container">
@@ -75,8 +74,7 @@ class Footer extends React.Component {
                 <p data-i18n="footer.copyright">Copyright 2021. Drafted by Victor Themes.</p>
             </div>
     </footer>
-        )
-    }
+    )
 }
 
 export default Footer
