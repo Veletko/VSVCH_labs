@@ -5,9 +5,9 @@ import Greate_Services from "../../img/gereat-services.svg"
 import Genuine from "../../img/genuine.png"
 import AboutUs_Img from "../../img/aboutus-image.jpg"
 import AbounUs_Hover from "../../img/aboutus-hover-image.jpg"
-class AboutUs extends React.Component {
-    render(){
-        return(
+
+const AboutUs = () => {
+    return(
              <section class="aboutus-section">
             <div class="aboutus-content">
                 <h3 data-i18n="homepage.about.title">About us</h3>
@@ -38,8 +38,8 @@ class AboutUs extends React.Component {
                 <img src={AbounUs_Hover} alt="bg-image"/>
             </div>
         </section>
-        )
-    }
+    )
 }
+
 
 export default AboutUs
