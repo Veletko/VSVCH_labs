@@ -3,9 +3,8 @@ import '../../pages/home/home.css'
 import Exclamation_mark from '../../img/exclamation_mark.png'
 import Banner_woman from '../../img/banner-woman.jpg'
 
-class Banner extends React.Component {
-    render () {
-        return (
+const Banner = () => {
+    return (
             <section class="banner-container">
             <div class="banner-container-left">
                 <div class="banner-container-text">
@@ -25,8 +24,8 @@ class Banner extends React.Component {
                 </div>
             </div>
         </section>
-        )
-    }
+    )
 }
+
 
 export default Banner
