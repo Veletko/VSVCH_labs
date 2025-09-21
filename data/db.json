@@ -1,0 +1,94 @@
+{
+  "services": [
+    {
+      "id": 1,
+      "title": {
+        "ru": "Антицеллюлитный массаж",
+        "en": "Anti-Cellulite Massage"
+      },
+      "image": "/img/card-image2.jpg",
+      "description": {
+        "ru": "Курс из 10 процедур для коррекции фигуры и улучшения тонуса кожи.",
+        "en": "Course of 10 procedures for body contouring and skin toning."
+      },
+      "category": "body",
+      "price": 40,
+      "duration": 50
+    },
+    {
+      "id": 2,
+      "title": {
+        "ru": "Вечерний макияж",
+        "en": "Evening Makeup"
+      },
+      "image": "/img/card-image3.png",
+      "description": {
+        "ru": "Профессиональный макияж для особых случаев с консультацией визажиста.",
+        "en": "Professional makeup for special occasions with artist consultation."
+      },
+      "category": "makeup",
+      "price": 50,
+      "duration": 60
+    },
+    {
+      "id": 3,
+      "title": {
+        "ru": "Глубокое очищение лица",
+        "en": "Deep Facial Cleansing"
+      },
+      "image": "/img/card-image1.png",
+      "description": {
+        "ru": "Чистка, тонизирование и увлажнение для проблемной кожи.",
+        "en": "Cleansing, toning and moisturizing for problem skin."
+      },
+      "category": "face",
+      "price": 60,
+      "duration": 80
+    },
+    {
+      "id": 4,
+      "title": {
+        "ru": "Мужское бритье",
+        "en": "Men's Shaving"
+      },
+      "image": "/img/card-image2.jpg",
+      "description": {
+        "ru": "Классическое опасное бритье с уходом за кожей.",
+        "en": "Classic straight razor shave with skin care."
+      },
+      "category": "barber",
+      "price": 30,
+      "duration": 40
+    },
+    {
+      "id": 5,
+      "title": {
+        "ru": "Парафинотерапия",
+        "en": "Paraffin Therapy"
+      },
+      "image": "/img/card-image3.png",
+      "description": {
+        "ru": "Уход за кожей рук с теплым парафином для смягчения и питания.",
+        "en": "Hand skin care with warm paraffin for softening and nourishment."
+      },
+      "category": "nails",
+      "price": 20,
+      "duration": 30
+    },
+    {
+      "id": 6,
+      "title": {
+        "ru": "Наращивание ресниц",
+        "en": "Eyelash Extensions"
+      },
+      "image": "/img/card-image1.png",
+      "description": {
+        "ru": "Объемное наращивание по индивидуальному дизайну.",
+        "en": "Volume extensions with custom design."
+      },
+      "category": "eyelashes",
+      "price": 55,
+      "duration": 90
+    }
+    ]
+}
