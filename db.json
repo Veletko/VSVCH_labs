@@ -1,0 +1,52 @@
+{
+  "cards": [
+    {
+      "id": 1,
+      "title": "Anti-Cellulite Massa",
+      "description": "Course of 10 procedures for body contouring and skin toning.",
+      "image": "/img/card-image2.jpg"
+    },
+    {
+      "id": 2,
+      "title": "Evening Makeup",
+      "image": "/img/card-image3.png",
+      "description": "Professional makeup for special occasions with artist consultation.",
+      "category": "makeup",
+      "price": 50,
+      "duration": 60
+    },
+    {
+      "id": 3,
+      "title": "Deep Facial Cleansing",
+      "image": "/img/card-image1.png",
+      "description": "Cleansing, toning and moisturizing for problem skin.",
+      "category": "face",
+      "price": 60,
+      "duration": 80
+    },
+    {
+      "id": 4,
+      "title": "Men's Shaving",
+      "image": "/img/card-image2.jpg",
+      "description": "Classic straight razor shave with skin care.",
+      "category": "barber",
+      "price": 30,
+      "duration": 40
+    },
+    {
+      "id": 5,
+      "title": "Paraffin Therapy",
+      "image": "/img/card-image3.png",
+      "description": "Hand skin care with warm paraffin for softening and nourishment.",
+      "category": "nails",
+      "price": 20,
+      "duration": 30
+    },
+    {
+      "id": 6,
+      "title": "Eyelash Ex",
+      "description": "Volume extensions with custom design.",
+      "image": "/img/card-image1.png"
+    }
+  ]
+}
