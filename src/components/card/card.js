@@ -1,18 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../../pages/home/home.css'
-import cardImage from '../../img/card-image1.png'
-class Card extends React.Component {
-    render () {
-        const {title, description} = this.props
-        return ( 
-             <div class="card">
-                <img src={cardImage} alt="service"/>
-                <h3>{title}</h3>
-                <p>{description}</p>
-                <button class="card-button" data-i18n="homepage.services.button" onclick="window.location.href='./services.html'">Read More</button>
-            </div>
-        )
-    }
+import Modal from '../modal/modal';
+
+const Card = ({id, title, description, image, updateCard}) =>{
+
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+    const handleOpenModal =  () => setIsModalOpen(true)
+    const handleCloseModal =  () => setIsModalOpen(false)
+
+    return ( 
+        <div className="card">
+            <img src={image} alt="service"/>
+            <h3>{title}</h3>
+            <p>{description}</p>
+            <button className="card-button" data-i18n="homepage.services.button">Read More</button>
+            <button className='card-button' onClick={handleOpenModal}>Edit</button>
+
+            {isModalOpen && (
+                <Modal 
+                id={id}
+                title= {title}
+                description={description}
+                image={image}
+                updateCard={updateCard}
+                onClose={handleCloseModal}/>
+            )}
+        </div>
+    )
+    
 }
 
 export default Card
