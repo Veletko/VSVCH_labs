@@ -1,27 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../../components/header/header.js'; 
 import Footer from '../../components/footer/footer.js';
 import Banner from '../../components/banner/banner.js';
 import CardSection from '../../components/cardSection/cardSection.js';
 import AboutUs from '../../components/aboutUs/aboutUs.js';
 
+const Home = () => {
+    const [cardInfo, setCardInfo] = useState([]);
+    
+    useEffect(() => {
+        fetch('http://localhost:3000/cards')
+            .then((response) => response.json())
+            .then((data) => setCardInfo(data))
+            .catch((error) => console.error("error with db", error));
+    }, []);
 
-class Home extends React.Component{
-    render () {
-        const cardInfo = [
-            {title: "Spa & Massage", description: "If you are going to use a passage offer Lorem Ipsum, you need to be sure hidden in the middle of text."},
-            {title: "Hair & Beauty", description: "If you are going to use a passage offer Lorem Ipsum, you need to be sure hidden in the middle of text."},
-            {title: "Body Treatments", description: "If you are going to use a passage offer Lorem Ipsum, you need to be sure hidden in the middle of text."}
-        ]
-        return (
-            <div>
-                <Header /> 
-                <Banner />
-                <CardSection cardInfo={cardInfo}/>
-                <AboutUs />
-                <Footer />
-            </div>
-        )
-    }
-}
+    const updateCard = (updatedCard) => {  
+        setCardInfo((previous) =>
+            previous.map((card) => (card.id === updatedCard.id ? updatedCard : card))
+        );
+        console.log (updatedCard.id)
+        fetch(`http://localhost:3000/cards/${updatedCard.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedCard),
+        })
+            .then((response) => response.json())
+            .catch((error) => console.error("error with card update", error));
+    };
+
+    return (
+        <div>
+            <Header /> 
+            <Banner />
+            <CardSection cardInfo={cardInfo} updateCard={updateCard}/>
+            <AboutUs />
+            <Footer />
+        </div>
+    );
+};
+
 export default Home
