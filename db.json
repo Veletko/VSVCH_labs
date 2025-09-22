@@ -8,12 +8,9 @@
     },
     {
       "id": 2,
-      "title": "Evening Makeup",
-      "image": "/img/card-image3.png",
+      "title": "Evening Mak",
       "description": "Professional makeup for special occasions with artist consultation.",
-      "category": "makeup",
-      "price": 50,
-      "duration": 60
+      "image": "/img/card-image3.png"
     },
     {
       "id": 3,

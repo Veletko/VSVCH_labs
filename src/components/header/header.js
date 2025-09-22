@@ -5,6 +5,7 @@ import Logo from "../../img/Logo.svg";
 import Phone from "../../img/phone.png";
 import Sun from "../../img/sun.png";
 import Basket from "../../img/basket.png";
+import { Link } from 'react-router-dom';
 
 const Header = () => {
     return (
@@ -29,10 +30,8 @@ const Header = () => {
                     </label>
                 </div>
                 <nav>
-                    <a href="/pages/login.html" data-i18n="header.nav.login">Log in</a>
-                    <a href="/pages/homepage.html" data-i18n="header.nav.home">Home</a>
-                    <a href="/public/pages/service.html" data-i18n="header.nav.services">Services</a>
-                    <a href="/pages/personalAccount.html" id="account-link" data-i18n="header.nav.account">Personal Account</a>
+                    <Link to="/services">услуги</Link>
+                    <Link to="/">главная</Link>
                 </nav>
                 <button className="burger-menu">
                     <span></span>
