@@ -31,11 +31,13 @@ const Home = () => {
             .catch((error) => console.error("error with card update", error));
     };
 
+    const limitedCardInfo = cardInfo.slice(0, 3);
+
     return (
         <div>
             <Header /> 
             <Banner />
-            <CardSection cardInfo={cardInfo} updateCard={updateCard}/>
+            <CardSection cardInfo={limitedCardInfo} updateCard={updateCard}/>
             <AboutUs />
             <Footer />
         </div>

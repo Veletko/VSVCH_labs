@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card,
   CardMedia,
@@ -11,11 +12,15 @@ import {
 import Modal from '../modal/modal';
 
 const ServiceCard = ({ id, title, description, image, updateCard }) => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+   const handleReadMore = () => {
+    navigate(`/services/${id}`); 
+  };
   return (
     <Box>
       <Card>
@@ -37,7 +42,7 @@ const ServiceCard = ({ id, title, description, image, updateCard }) => {
         </CardContent>
         
         <CardActions>
-          <Button size="small">Read More</Button>
+          <Button size="small" onClick={handleReadMore}>Read More</Button>
           <Button size="small" onClick={handleOpenModal}>
             Edit
           </Button>
