@@ -1,34 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import {useEffect} from "react";
+import { useSelector, useDispatch} from 'react-redux';
+import { fetchServices, updateService } from '../../store/Slices/servicesSlice.js'; 
+
 import Header from '../../components/header/header.js'; 
 import Footer from '../../components/footer/footer.js';
 import Banner from '../../components/banner/banner.js';
 import CardSection from '../../components/cardSection/cardSection.js';
 import AboutUs from '../../components/aboutUs/aboutUs.js';
+import { Typography } from '@mui/material'; 
 
 const Home = () => {
-    const [cardInfo, setCardInfo] = useState([]);
+    const dispatch = useDispatch();
+    
+    const { services: cardInfo, loading, error } = useSelector((state) => state.services);
     
     useEffect(() => {
-        fetch('http://localhost:3000/cards')
-            .then((response) => response.json())
-            .then((data) => setCardInfo(data))
-            .catch((error) => console.error("error with db", error));
-    }, []);
+        dispatch(fetchServices());
+    }, [dispatch]);
 
-    const updateCard = (updatedCard) => {  
-        setCardInfo((previous) =>
-            previous.map((card) => (card.id === updatedCard.id ? updatedCard : card))
-        );
-        console.log (updatedCard.id)
-        fetch(`http://localhost:3000/cards/${updatedCard.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatedCard),
-        })
-            .then((response) => response.json())
-            .catch((error) => console.error("error with card update", error));
+    const handleUpdateCard = (updatedCard) => { 
+        dispatch(updateService(updatedCard));
     };
 
     const limitedCardInfo = cardInfo.slice(0, 3);
@@ -37,11 +28,15 @@ const Home = () => {
         <div>
             <Header /> 
             <Banner />
-            <CardSection cardInfo={limitedCardInfo} updateCard={updateCard}/>
+            {loading && <Typography>Загрузка услуг...</Typography>}
+            {error && <Typography color="error">Ошибка загрузки: {error}</Typography>}
+            {!loading && limitedCardInfo.length > 0 && (
+                <CardSection cardInfo={limitedCardInfo} updateCard={handleUpdateCard}/>
+            )}
             <AboutUs />
             <Footer />
         </div>
     );
 };
 
-export default Home
+export default Home;
