@@ -8,18 +8,9 @@
     },
     {
       "id": 2,
-      "title": "Evening ",
+      "title": "Even",
       "description": "Professional makeup for special occasions with artist consultation.",
       "image": "/img/card-image3.png"
-    },
-    {
-      "id": 3,
-      "title": "Deep Facial Cleansing",
-      "image": "/img/card-image1.png",
-      "description": "Cleansing, toning and moisturizing for problem skin.",
-      "category": "face",
-      "price": 60,
-      "duration": 80
     },
     {
       "id": 4,
@@ -44,6 +35,18 @@
       "title": "Eyelash Ex",
       "description": "Volume extensions with custom design.",
       "image": "/img/card-image1.png"
+    },
+    {
+      "title": "Новая услуга",
+      "description": "Описание услуги",
+      "image": "/img/default.png",
+      "id": 7
+    },
+    {
+      "title": "Новая услуга",
+      "description": "Описание услуги",
+      "image": "/img/default.png",
+      "id": 8
     }
   ]
 }

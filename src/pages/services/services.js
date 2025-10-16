@@ -1,42 +1,61 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchServices, addService, clearError } from '../../store/Slices/servicesSlice.js';
 import Header from '../../components/header/header';
 import Footer from '../../components/footer/footer';
-import CardSection from '../../components/cardSection/cardSection';
+import CardSection from '../../components/cardSection/cardSection.js';
+import FilterSortControls from '../../components/FilterSortControls/filterSortControls.js';
+import { Button, Typography, Box } from '@mui/material';
 
-const Services = () => {
-  const [cardInfo, setCardInfo] = useState([]);
-
+function Services() {
+  const dispatch = useDispatch();
+  const { services, loading, error } = useSelector((state) => state.services);
+  const { category, sortBy } = useSelector((state) => state.filters);
 
   useEffect(() => {
-    fetch('http://localhost:3000/cards')
-      .then((response) => response.json())
-      .then((data) => setCardInfo(data))
-      .catch((error) => console.error('Ошибка при загрузке данных:', error));
-  }, []); 
+    dispatch(fetchServices());
+  }, [dispatch]);
 
-  const updateCard = (updatedCard) => {
-    setCardInfo((previous) =>
-      previous.map((card) => (card.id === updatedCard.id ? updatedCard : card))
+  const handleAdd = () => {
+    dispatch(
+      addService({
+        title: 'Новая услуга',
+        description: 'Описание услуги',
+        image: '/img/default.png',
+      })
     );
-    console.log('Обновление карточки с ID:', updatedCard.id);
-    fetch(`http://localhost:3000/cards/${updatedCard.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updatedCard),
-    })
-      .then((response) => response.json())
-      .catch((error) => console.error('Ошибка при обновлении карточки:', error));
   };
 
+  const filteredServices = services
+    .filter((service) => category === 'all' || service.category === category)
+    .sort((a, b) => {
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      if (sortBy === 'price') {
+        return (a.price || 0) - (b.price || 0);
+      }
+      return 0;
+    });
+
   return (
-    <div>
+    <Box>
       <Header />
-      <CardSection cardInfo={cardInfo} updateCard={updateCard} />
+      {loading && <Typography>Загрузка...</Typography>}
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error">{error}</Typography>
+          <Button onClick={() => dispatch(clearError())}>Очистить</Button>
+        </Box>
+      )}
+      <FilterSortControls />
+      <Button variant="contained" onClick={handleAdd} sx={{ mb: 2 }}>
+        Добавить услугу
+      </Button>
+      <CardSection cardInfo={filteredServices} />
       <Footer />
-    </div>
+    </Box>
   );
-};
+}
 
 export default Services;
