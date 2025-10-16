@@ -1,38 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Typography, 
-  Button, 
-  Box, 
-  Card, 
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchServices } from '../../store/Slices/servicesSlice';
+import {
+  Container,
+  Typography,
+  Button,
+  Box,
+  Card,
   CardMedia,
   AppBar,
   Toolbar,
   Chip,
   Divider,
-  Rating
+  Rating,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 
-const AbooutService = () => {
+function AboutService() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [service, setService] = useState(null);
-  const [rating] = useState(4.5);
+  const dispatch = useDispatch();
+  const { services, loading, error } = useSelector((state) => state.services);
+  const service = services.find((s) => s.id === parseInt(id));
+  const rating = 4.5;
 
   useEffect(() => {
-    fetch(`http://localhost:3000/cards/${id}`)
-      .then(response => response.json())
-      .then(data => setService(data))
-      .catch(error => console.error('Error loading service:', error));
-  }, [id]);
+    if (services.length === 0) {
+      dispatch(fetchServices());
+    }
+  }, [dispatch, services.length]);
+
+  if (loading) {
+    return (
+      <Container>
+        <Typography>Loading...</Typography>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Typography color="error">{error}</Typography>
+      </Container>
+    );
+  }
 
   if (!service) {
     return (
       <Container>
-        <Typography>Loading...</Typography>
+        <Typography>No services</Typography>
       </Container>
     );
   }
@@ -41,17 +60,14 @@ const AbooutService = () => {
     <Box>
       <AppBar position="static" color="transparent" elevation={0}>
         <Toolbar>
-          <Button 
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
-          >
+          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
             Back to Services
           </Button>
           <Box sx={{ flexGrow: 1 }} />
-          <Chip 
+          <Chip
             icon={<FavoriteIcon />}
-            label="Popular Service" 
-            color="secondary" 
+            label="Popular Service"
+            color="secondary"
             variant="outlined"
           />
         </Toolbar>
@@ -65,36 +81,25 @@ const AbooutService = () => {
             image={service.image}
             alt={service.title}
           />
-          
           <Box sx={{ p: 3 }}>
             <Typography variant="h3" gutterBottom>
               {service.title}
             </Typography>
-            
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Rating
-                value={rating}
-                precision={0.5}
-                readOnly
-                sx={{ mr: 2 }}
-              />
+              <Rating value={rating} precision={0.5} readOnly sx={{ mr: 2 }} />
               <Typography variant="body2" color="text.secondary">
                 ({rating}/5)
               </Typography>
             </Box>
-
-              <Divider sx={{ my: 3 }} />
-              
+            <Divider sx={{ my: 3 }} />
             <Typography variant="body1" paragraph>
               {service.description}
             </Typography>
-            
-          
           </Box>
         </Card>
       </Container>
     </Box>
   );
-};
+}
 
-export default AbooutService;
+export default AboutService;
