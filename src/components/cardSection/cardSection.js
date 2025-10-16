@@ -1,21 +1,20 @@
 import React from 'react';
-import '../../pages/home/home.css'
-import Card from '../card/card';
+import CardService from '../card/cardService';
 
-const CardSection = ({cardInfo, updateCard}) => {
-    return(
-        <section class="cards-container">
-            {cardInfo.map((item) => (
-                <Card 
-                id={item.id}
-                title={item.title}
-                description={item.description}
-                image ={item.image}
-                updateCard = {updateCard}/>
-            ))}
-        </section>
-    )
+function CardSection({ cardInfo }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+      {cardInfo.map((service) => (
+        <CardService
+          key={service.id}
+          id={service.id}
+          title={service.title}
+          description={service.description}
+          image={service.image}
+        />
+      ))}
+    </div>
+  );
 }
 
-
-export default CardSection
+export default CardSection;
