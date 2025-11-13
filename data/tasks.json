@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "title": "Купить молоко",
+    "categoryId": 1,
+    "done": true
+  },
+  {
+    "id": 2,
+    "title": "Подготовить презентацию",
+    "categoryId": 2,
+    "done": true
+  },
+  {
+    "id": 4,
+    "title": "nb",
+    "categoryId": 1,
+    "done": true
+  },
+  {
+    "id": 5,
+    "title": "hiuhi",
+    "categoryId": 3,
+    "done": false
+  }
+]
