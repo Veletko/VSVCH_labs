@@ -1,0 +1,94 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f7f9fc;
+  color: #333;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+  color: #2c3e50;
+}
+
+.form-group {
+  margin: 15px 0;
+}
+
+input, select, button {
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+button {
+  background: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #2980b9;
+}
+
+button.danger {
+  background: #e74c3c;
+}
+
+button.danger:hover {
+  background: #c0392b;
+}
+
+.task {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task.done {
+  color: #27ae60;
+  text-decoration: line-through;
+}
+
+.stats {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.download-btns {
+  margin-top: 20px;
+}
+
+.download-btns button {
+  margin-right: 10px;
+}
+
+.task input[type="checkbox"] {
+  transform: scale(1.3);
+  margin: 0;
+}
+
+.task.done span {
+  text-decoration: line-through;
+  color: #27ae60;
+}
