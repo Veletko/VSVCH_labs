@@ -1,0 +1,11 @@
+{
+  "name": "web-scraper-client",
+  "version": "1.0.0",
+  "description": "Клиент для парсера",
+  "main": "script.js",
+  "scripts": {
+    "start": "echo 'Открой index.html в браузере'"
+  },
+  "author": "",
+  "license": "MIT"
+}

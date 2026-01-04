@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Веб-парсер цитат - Лабораторная работа №12</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1>📊 Веб-парсер цитат</h1>
+            <p class="subtitle">Лабораторная работа №12 - Вариант 35</p>
+            <div class="header-info">
+                <span class="info-item">📄 Парсинг 3 страниц</span>
+                <span class="info-item">📈 6 типов графиков</span>
+                <span class="info-item">🔍 Фильтрация и поиск</span>
+                <span class="info-item">📊 Полная статистика</span>
+            </div>
+        </header>
+
+        <!-- Панель управления -->
+        <section class="card control-panel">
+            <h2>⚙️ Панель управления</h2>
+            
+            <div class="buttons-group">
+                <button id="scrapeBtn" class="btn btn-primary">
+                    <span class="btn-text">🚀 Запустить парсинг</span>
+                    <div class="spinner hidden" id="loadingSpinner"></div>
+                </button>
+                <button id="refreshBtn" class="btn btn-secondary">🔄 Обновить данные</button>
+                <button id="clearFiltersBtn" class="btn btn-outline">🗑️ Сбросить фильтры</button>
+            </div>
+            
+            <div class="filters-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Поиск по тексту или автору...">
+                </div>
+                
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="pageFilter">📄 Страница:</label>
+                        <select id="pageFilter" class="filter-select">
+                            <option value="">Все страницы</option>
+                            <option value="1">Страница 1</option>
+                            <option value="2">Страница 2</option>
+                            <option value="3">Страница 3</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="authorFilter">👤 Автор:</label>
+                        <select id="authorFilter" class="filter-select">
+                            <option value="">Все авторы</option>
+                            <!-- Авторы загружаются динамически -->
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="tagFilter">🏷️ Тег:</label>
+                        <select id="tagFilter" class="filter-select">
+                            <option value="">Все теги</option>
+                            <!-- Теги загружаются динамически -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar" id="statusBar">
+                <span id="statusText">✅ Готов к работе. Нажмите "Запустить парсинг"</span>
+            </div>
+        </section>
+
+        <!-- Основная статистика -->
+        <section class="card stats-section">
+            <h2>📊 Основная статистика</h2>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalQuotes">0</div>
+                    <div class="stat-label">Всего цитат</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="uniqueAuthors">0</div>
+                    <div class="stat-label">Уникальных авторов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTags">0</div>
+                    <div class="stat-label">Уникальных тегов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="repeatedAuthors">0</div>
+                    <div class="stat-label">Повторяющихся авторов</div>
+                </div>
+            </div>
+            
+            <div class="detailed-stats">
+                <div class="stat-block">
+                    <h3>📈 Динамика по страницам</h3>
+                    <div id="pageStatsTable">Загрузка...</div>
+                </div>
+                
+                <div class="stat-block">
+                    <h3>🏆 Топ-10 авторов</h3>
+                    <div id="topAuthorsList">Загрузка...</div>
+                </div>
+                
+                <div class="stat-block">
+                    <h3>🔄 Авторы на разных страницах</h3>
+                    <div id="repeatedAuthorsList">Загрузка...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Все графики -->
+        <section class="card charts-section">
+            <h2>📈 Графики и визуализация</h2>
+            
+            <div class="charts-grid">
+                <!-- Требуемые по заданию графики -->
+                <div class="chart-container">
+                    <h3>📈 Уникальные авторы по страницам</h3>
+                    <canvas id="authorsChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>📊 Распределение цитат по страницам</h3>
+                    <canvas id="quotesChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>🏆 Топ-авторы по страницам</h3>
+                    <canvas id="topAuthorsChart"></canvas>
+                </div>
+                
+                <!-- Дополнительные графики -->
+                <div class="chart-container">
+                    <h3>🔄 Средняя длина цитат по страницам</h3>
+                    <canvas id="lengthChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>🕸️ Эмоциональные категории (Radar)</h3>
+                    <canvas id="radarChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>📋 Цитаты по тегам</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                
+                <div class="chart-container full-width">
+                    <h3>✏️ Длина vs Экспрессивность (Scatter)</h3>
+                    <canvas id="scatterChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Список цитат -->
+        <section class="card quotes-section">
+            <div class="section-header">
+                <h2>📝 Извлеченные цитаты</h2>
+                <div class="quotes-info">
+                    <span id="quotesCountText">Загружено: 0 цитат</span>
+                    <span id="filteredCountText">Показано: 0 цитат</span>
+                </div>
+            </div>
+            
+            <div class="quotes-grid" id="quotesContainer">
+                <div class="no-data">
+                    <p>📭 Данные не загружены. Нажмите "Запустить парсинг"</p>
+                </div>
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <!-- Пагинация будет создана динамически -->
+            </div>
+        </section>
+
+        <!-- Футер -->
+        <footer class="footer">
+            <p>Лабораторная работа №12 • Веб-парсер цитат • Вариант 35</p>
+            <p>URL: https://quotes.toscrape.com/tag/inspirational/</p>
+            <p class="server-status">Сервер: <span id="serverStatus">🔴 Не подключен</span></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="charts.js"></script>
+</body>
+</html>
