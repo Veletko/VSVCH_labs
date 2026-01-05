@@ -17,12 +17,14 @@ import {
   DialogContent,
   DialogTitle,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Snackbar
 } from '@mui/material';
 import { Edit, Delete, Add, Search } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMachines, deleteMachine } from '../../store/slices/machinesSlice';
 import MachineForm from './MachineForm';
+import axios from 'axios';
 
 const MachineList = () => {
   const dispatch = useDispatch();
@@ -31,6 +33,11 @@ const MachineList = () => {
   const [editingMachine, setEditingMachine] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   useEffect(() => {
     dispatch(fetchMachines());
@@ -46,10 +53,36 @@ const MachineList = () => {
   };
 
   const confirmDelete = async () => {
-    await dispatch(deleteMachine(deleteConfirm.id)).unwrap();
-    // Обновляем список после удаления
-    dispatch(fetchMachines());
-    setDeleteConfirm(null);
+    try {
+      // Используем прямой вызов API через axios
+      await axios.delete(`/api/machines/${deleteConfirm.id}`);
+      
+      // Показываем уведомление об успехе
+      setSnackbar({
+        open: true,
+        message: 'Машина успешно удалена',
+        severity: 'success'
+      });
+      
+      // Обновляем список
+      dispatch(fetchMachines());
+    } catch (error) {
+      // Обрабатываем ошибку
+      console.error('Error deleting machine:', error);
+      
+      let errorMessage = 'Ошибка при удалении машины';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+    } finally {
+      setDeleteConfirm(null);
+    }
   };
 
   const handleCreate = () => {
@@ -60,6 +93,10 @@ const MachineList = () => {
   const handleCloseForm = () => {
     setOpenForm(false);
     setEditingMachine(null);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const filteredMachines = machines.filter(machine =>
@@ -166,6 +203,9 @@ const MachineList = () => {
           <Typography>
             Вы уверены, что хотите удалить машину с ID {deleteConfirm?.id}?
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Все связанные записи обслуживания также будут удалены.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirm(null)}>Отмена</Button>
@@ -174,9 +214,23 @@ const MachineList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Уведомление */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };
 
 export default MachineList;
-

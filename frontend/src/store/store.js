@@ -3,9 +3,12 @@ import mastersSlice from './slices/mastersSlice';
 import workersSlice from './slices/workersSlice';
 import machinesSlice from './slices/machinesSlice';
 import maintenanceSlice from './slices/maintenanceSlice';
+import authReducer from './slices/authSlice';
+
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     masters: mastersSlice,
     workers: workersSlice,
     machines: machinesSlice,

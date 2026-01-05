@@ -1,15 +1,21 @@
+// config/database.js
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
+  process.env.DB_NAME || 'your_database',
+  process.env.DB_USER || 'your_username',
+  process.env.DB_PASSWORD || 'your_password',
   {
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    port: process.env.DB_PORT,
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
   }
 );
 

@@ -10,9 +10,13 @@ router.get('/search', machineController.search);
 router.get('/:id', machineController.getById);
 router.get('/:id/exists', machineController.exists);
 router.get('/:id/with-maintenance', machineController.getWithMaintenance);
-router.get('/:id/statistics', machineController.getStatistics);
 router.post('/', machineController.create);
 router.put('/:id', machineController.update);
+
+// Удаление с зависимостями (основной метод)
 router.delete('/:id', machineController.delete);
+
+// Альтернативный метод - безопасное удаление (только если нет зависимостей)
+router.delete('/:id/safe', machineController.safeDelete);
 
 module.exports = router;
