@@ -1,7 +1,7 @@
+// controllers/machineController.js
 const Machine = require('../models/Machine');
 const MaintenanceHistory = require('../models/MaintenanceHistory');
 const BaseController = require('./baseController');
-const { sequelize } = require('../config/database'); // Добавьте этот импорт
 
 class MachineController extends BaseController {
   constructor() {
@@ -13,12 +13,12 @@ class MachineController extends BaseController {
     try {
       const { id } = req.params;
       
-      const machine = await this.model.findByPk(id, {
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          include: ['master'] // если нужно включить мастера
-        }]
+      const machine = await Machine.findById(id).populate({
+        path: 'maintenance_history',
+        populate: {
+          path: 'master_id',
+          select: '_id last_name first_name middle_name'
+        }
       });
 
       if (!machine) {
@@ -41,27 +41,23 @@ class MachineController extends BaseController {
     }
   };
 
-  // Основной метод удаления с транзакцией
+  // Основной метод удаления
   delete = async (req, res) => {
-    const transaction = await sequelize.transaction(); // Начинаем транзакцию
+    const session = await Machine.startSession();
     
     try {
+      session.startTransaction();
       const { id } = req.params;
 
       // 1. Сначала удаляем все связанные записи обслуживания
-      await MaintenanceHistory.destroy({
-        where: { machine_id: id },
-        transaction // передаем транзакцию
-      });
+      await MaintenanceHistory.deleteMany({ machine_id: id }, { session });
 
       // 2. Затем удаляем саму машину
-      const deleted = await this.model.destroy({
-        where: { id },
-        transaction // передаем транзакцию
-      });
+      const deleted = await Machine.findByIdAndDelete(id, { session });
 
       if (!deleted) {
-        await transaction.rollback(); // откатываем транзакцию
+        await session.abortTransaction();
+        session.endSession();
         return res.status(404).json({
           success: false,
           error: 'Машина не найдена'
@@ -69,7 +65,8 @@ class MachineController extends BaseController {
       }
 
       // 3. Подтверждаем транзакцию
-      await transaction.commit();
+      await session.commitTransaction();
+      session.endSession();
 
       res.json({
         success: true,
@@ -77,9 +74,10 @@ class MachineController extends BaseController {
       });
     } catch (error) {
       // Откатываем транзакцию при ошибке
-      if (transaction && !transaction.finished) {
-        await transaction.rollback();
+      if (session.inTransaction()) {
+        await session.abortTransaction();
       }
+      session.endSession();
       
       console.error('Error deleting machine:', error);
       res.status(500).json({
@@ -95,8 +93,8 @@ class MachineController extends BaseController {
       const { id } = req.params;
 
       // Проверяем, есть ли связанные записи обслуживания
-      const maintenanceCount = await MaintenanceHistory.count({
-        where: { machine_id: id }
+      const maintenanceCount = await MaintenanceHistory.countDocuments({
+        machine_id: id
       });
 
       if (maintenanceCount > 0) {
@@ -107,9 +105,7 @@ class MachineController extends BaseController {
       }
       
       // Если зависимостей нет, удаляем
-      const deleted = await this.model.destroy({
-        where: { id }
-      });
+      const deleted = await Machine.findByIdAndDelete(id);
 
       if (!deleted) {
         return res.status(404).json({

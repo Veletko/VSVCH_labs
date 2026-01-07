@@ -1,7 +1,7 @@
+// controllers/authController.js
 const Master = require('../models/Master');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Op } = require('sequelize');
 
 class AuthController {
   // Регистрация нового мастера
@@ -10,7 +10,7 @@ class AuthController {
       const { last_name, first_name, middle_name, email, password } = req.body;
 
       // Проверяем, существует ли пользователь с таким email
-      const existingMaster = await Master.findOne({ where: { email } });
+      const existingMaster = await Master.findOne({ email });
       if (existingMaster) {
         return res.status(400).json({
           success: false,
@@ -34,7 +34,7 @@ class AuthController {
         success: true,
         data: {
           master: {
-            id: master.id,
+            _id: master._id,
             last_name: master.last_name,
             first_name: master.first_name,
             middle_name: master.middle_name,
@@ -59,7 +59,7 @@ class AuthController {
       const { email, password } = req.body;
 
       // Находим пользователя по email
-      const master = await Master.findOne({ where: { email } });
+      const master = await Master.findOne({ email });
       
       if (!master) {
         return res.status(401).json({
@@ -92,7 +92,7 @@ class AuthController {
         success: true,
         data: {
           master: {
-            id: master.id,
+            _id: master._id,
             last_name: master.last_name,
             first_name: master.first_name,
             middle_name: master.middle_name,
@@ -118,14 +118,13 @@ class AuthController {
         success: true,
         data: {
           master: {
-            id: req.master.id,
+            _id: req.master._id,
             last_name: req.master.last_name,
             first_name: req.master.first_name,
             middle_name: req.master.middle_name,
             email: req.master.email,
             role: req.master.role,
-            is_active: req.master.is_active,
-            created_at: req.master.created_at
+            is_active: req.master.is_active
           }
         }
       });
@@ -178,7 +177,7 @@ class AuthController {
     try {
       const { email } = req.body;
 
-      const master = await Master.findOne({ where: { email } });
+      const master = await Master.findOne({ email });
       
       if (!master) {
         // Возвращаем успех даже если email не найден (в целях безопасности)
@@ -203,7 +202,6 @@ class AuthController {
       await master.save();
 
       // TODO: Отправка email с токеном
-      // В реальном приложении здесь должен быть код отправки email
       const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${resetToken}`;
 
       console.log('Ссылка для сброса пароля:', resetUrl);
@@ -238,12 +236,8 @@ class AuthController {
 
       // Ищем пользователя с действующим токеном
       const master = await Master.findOne({
-        where: {
-          reset_password_token: resetTokenHash,
-          reset_password_expires: {
-            [Op.gt]: Date.now()
-          }
-        }
+        reset_password_token: resetTokenHash,
+        reset_password_expires: { $gt: Date.now() }
       });
 
       if (!master) {

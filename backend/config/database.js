@@ -1,22 +1,21 @@
-// config/database.js
-const { Sequelize } = require('sequelize');
+const mongoose = require('mongoose');
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'your_database',
-  process.env.DB_USER || 'your_username',
-  process.env.DB_PASSWORD || 'your_password',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    }
+const connectDB = async () => {
+  try {
+    // Используем строку подключения из .env или локальную MongoDB
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/Fuctory';
+    
+    // В Mongoose 6+ useNewUrlParser и useUnifiedTopology больше не нужны
+    const conn = await mongoose.connect(mongoURI);
+    
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`📊 Database: ${conn.connection.name}`);
+    
+    return conn;
+  } catch (error) {
+    console.error(`❌ Error connecting to MongoDB: ${error.message}`);
+    process.exit(1);
   }
-);
+};
 
-module.exports = sequelize;
+module.exports = connectDB;

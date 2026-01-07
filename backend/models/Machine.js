@@ -1,15 +1,21 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+// models/Machine.js
+const mongoose = require('mongoose');
 
-const Machine = sequelize.define('Machine', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  }
+const machineSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'maintenance'],
+    default: 'active'
+  },
+  maintenance_history: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MaintenanceHistory'
+  }]
 }, {
-  tableName: 'machine',
-  timestamps: false
+  timestamps: true,
+  versionKey: '__v'
 });
+
+const Machine = mongoose.model('Machine', machineSchema, 'machines');
 
 module.exports = Machine;

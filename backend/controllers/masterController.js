@@ -1,5 +1,6 @@
+// controllers/masterController.js
 const BaseController = require('./baseController');
-const { Master, MaintenanceHistory, Machine } = require('../models/associations');
+const Master = require('../models/Master');
 
 class MasterController extends BaseController {
   constructor() {
@@ -13,28 +14,32 @@ class MasterController extends BaseController {
         page = 1,
         limit = 10,
         sortBy = 'id',
-        sortOrder = 'ASC'
+        sortOrder = 'asc'
       } = req.query;
 
       const offset = (page - 1) * limit;
+      const mongoSortBy = sortBy === 'id' ? '_id' : sortBy;
+      const sortDirection = sortOrder.toLowerCase() === 'desc' ? -1 : 1;
 
-      const { count, rows } = await Master.findAndCountAll({
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          include: [{
-            model: Machine,
-            as: 'machine'
-          }]
-        }],
-        order: [[sortBy, sortOrder]],
-        limit: parseInt(limit),
-        offset: parseInt(offset)
-      });
+      const [records, count] = await Promise.all([
+        Master.find()
+          .populate({
+            path: 'maintenance_history',
+            populate: {
+              path: 'machine_id',
+              select: '_id status'
+            }
+          })
+          .populate('workers')
+          .sort({ [mongoSortBy]: sortDirection })
+          .skip(parseInt(offset))
+          .limit(parseInt(limit)),
+        Master.countDocuments()
+      ]);
 
       res.json({
         success: true,
-        data: rows,
+        data: records,
         pagination: {
           current: parseInt(page),
           total: count,
@@ -53,16 +58,15 @@ class MasterController extends BaseController {
   // Получить мастера с его обслуживаниями
   getWithMaintenance = async (req, res) => {
     try {
-      const master = await Master.findByPk(req.params.id, {
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          include: [{
-            model: Machine,
-            as: 'machine'
-          }]
-        }]
-      });
+      const master = await Master.findById(req.params.id)
+        .populate({
+          path: 'maintenance_history',
+          populate: {
+            path: 'machine_id',
+            select: '_id status'
+          }
+        })
+        .populate('workers');
       
       if (!master) {
         return res.status(404).json({
@@ -76,6 +80,12 @@ class MasterController extends BaseController {
         data: master
       });
     } catch (error) {
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
       res.status(500).json({
         success: false,
         error: error.message
@@ -86,13 +96,11 @@ class MasterController extends BaseController {
   // Статистика по мастеру
   getStatistics = async (req, res) => {
     try {
-      const master = await Master.findByPk(req.params.id, {
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          attributes: ['id', 'state', 'start_date', 'end_date']
-        }]
-      });
+      const master = await Master.findById(req.params.id)
+        .populate({
+          path: 'maintenance_history',
+          select: 'state start_date end_date'
+        });
       
       if (!master) {
         return res.status(404).json({
@@ -102,11 +110,11 @@ class MasterController extends BaseController {
       }
       
       const stats = {
-        totalMaintenance: master.maintenanceHistory.length,
-        completedMaintenance: master.maintenanceHistory.filter(m => m.state === 'completed').length,
-        inProgressMaintenance: master.maintenanceHistory.filter(m => m.state === 'in_progress').length,
-        plannedMaintenance: master.maintenanceHistory.filter(m => m.state === 'planned').length,
-        lastMaintenance: master.maintenanceHistory
+        totalMaintenance: master.maintenance_history.length,
+        completedMaintenance: master.maintenance_history.filter(m => m.state === 'completed').length,
+        inProgressMaintenance: master.maintenance_history.filter(m => m.state === 'in_progress').length,
+        plannedMaintenance: master.maintenance_history.filter(m => m.state === 'planned').length,
+        lastMaintenance: master.maintenance_history
           .filter(m => m.state === 'completed')
           .sort((a, b) => new Date(b.end_date) - new Date(a.end_date))[0] || null
       };
@@ -116,6 +124,12 @@ class MasterController extends BaseController {
         data: stats
       });
     } catch (error) {
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
       res.status(500).json({
         success: false,
         error: error.message
@@ -127,20 +141,5 @@ class MasterController extends BaseController {
 // Создаем экземпляр контроллера
 const masterController = new MasterController();
 
-// Экспортируем методы контроллера
-module.exports = {
-  getAll: masterController.getAll,
-  getAllSorted: masterController.getAllSorted,
-  getAllFiltered: masterController.getAllFiltered,
-  search: masterController.search,
-  getById: masterController.getById,
-  exists: masterController.exists,
-  create: masterController.create,
-  update: masterController.update,
-  delete: masterController.delete,
-  getAllWithMaintenance: masterController.getAllWithMaintenance,
-  getWithMaintenance: masterController.getWithMaintenance,
-  getStatistics: masterController.getStatistics
-};
-
+// Экспортируем все методы контроллера
 module.exports = masterController;

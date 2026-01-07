@@ -1,6 +1,8 @@
+// controllers/maintenanceController.js
 const BaseController = require('./baseController');
-const { MaintenanceHistory, Machine, Master } = require('../models/associations');
-const { Op } = require('sequelize');
+const MaintenanceHistory = require('../models/MaintenanceHistory');
+const Machine = require('../models/Machine');
+const Master = require('../models/Master');
 
 class MaintenanceController extends BaseController {
   constructor() {
@@ -13,42 +15,40 @@ class MaintenanceController extends BaseController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'id',
-        sortOrder = 'ASC',
+        sortBy = '_id',
+        sortOrder = 'asc',
         ...filters
       } = req.query;
 
-      const where = {};
+      const filter = {};
       Object.keys(filters).forEach(key => {
         if (filters[key] && filters[key] !== '') {
-          where[key] = filters[key];
+          filter[key] = filters[key];
         }
       });
 
       const offset = (page - 1) * limit;
+      const sortDirection = sortOrder.toLowerCase() === 'desc' ? -1 : 1;
 
-      const { count, rows } = await MaintenanceHistory.findAndCountAll({
-        where,
-        include: [
-          {
-            model: Machine,
-            as: 'machine',
-            attributes: ['id']
-          },
-          {
-            model: Master,
-            as: 'master',
-            attributes: ['id', 'last_name', 'first_name', 'middle_name']
-          }
-        ],
-        order: [[sortBy, sortOrder]],
-        limit: parseInt(limit),
-        offset: parseInt(offset)
-      });
+      const [records, count] = await Promise.all([
+        MaintenanceHistory.find(filter)
+          .populate({
+            path: 'machine_id',
+            select: '_id status'
+          })
+          .populate({
+            path: 'master_id',
+            select: '_id last_name first_name middle_name'
+          })
+          .sort({ [sortBy]: sortDirection })
+          .skip(parseInt(offset))
+          .limit(parseInt(limit)),
+        MaintenanceHistory.countDocuments(filter)
+      ]);
 
       res.json({
         success: true,
-        data: rows,
+        data: records,
         pagination: {
           current: parseInt(page),
           total: count,
@@ -67,20 +67,15 @@ class MaintenanceController extends BaseController {
   // Получить запись обслуживания с детальной информацией
   getDetailed = async (req, res) => {
     try {
-      const maintenance = await MaintenanceHistory.findByPk(req.params.id, {
-        include: [
-          {
-            model: Machine,
-            as: 'machine',
-            attributes: ['id']
-          },
-          {
-            model: Master,
-            as: 'master',
-            attributes: ['id', 'last_name', 'first_name', 'middle_name']
-          }
-        ]
-      });
+      const maintenance = await MaintenanceHistory.findById(req.params.id)
+        .populate({
+          path: 'machine_id',
+          select: '_id status'
+        })
+        .populate({
+          path: 'master_id',
+          select: '_id last_name first_name middle_name'
+        });
       
       if (!maintenance) {
         return res.status(404).json({
@@ -109,26 +104,24 @@ class MaintenanceController extends BaseController {
 
       const offset = (page - 1) * limit;
 
-      const { count, rows } = await MaintenanceHistory.findAndCountAll({
-        where: { state },
-        include: [
-          {
-            model: Machine,
-            as: 'machine'
-          },
-          {
-            model: Master,
-            as: 'master',
-            attributes: ['id', 'last_name', 'first_name', 'middle_name']
-          }
-        ],
-        limit: parseInt(limit),
-        offset: parseInt(offset)
-      });
+      const [records, count] = await Promise.all([
+        MaintenanceHistory.find({ state })
+          .populate({
+            path: 'machine_id',
+            select: '_id status'
+          })
+          .populate({
+            path: 'master_id',
+            select: '_id last_name first_name middle_name'
+          })
+          .skip(parseInt(offset))
+          .limit(parseInt(limit)),
+        MaintenanceHistory.countDocuments({ state })
+      ]);
 
       res.json({
         success: true,
-        data: rows,
+        data: records,
         state,
         pagination: {
           current: parseInt(page),

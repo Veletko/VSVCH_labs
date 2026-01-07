@@ -1,127 +1,102 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+// models/Master.js
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const Master = sequelize.define('Master', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
+const masterSchema = new mongoose.Schema({
   last_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      notEmpty: {
-        msg: 'Фамилия не может быть пустой'
-      },
-      len: {
-        args: [1, 50],
-        msg: 'Фамилия должна содержать от 1 до 50 символов'
-      }
-    }
+    type: String,
+    required: [true, 'Фамилия не может быть пустой'],
+    trim: true,
+    maxlength: [50, 'Фамилия не может превышать 50 символов']
   },
   first_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      notEmpty: {
-        msg: 'Имя не может быть пустым'
-      },
-      len: {
-        args: [1, 50],
-        msg: 'Имя должно содержать от 1 до 50 символов'
-      }
-    }
+    type: String,
+    required: [true, 'Имя не может быть пустым'],
+    trim: true,
+    maxlength: [50, 'Имя не может превышать 50 символов']
   },
   middle_name: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    validate: {
-      len: {
-        args: [0, 50],
-        msg: 'Отчество не может превышать 50 символов'
-      }
-    }
+    type: String,
+    trim: true,
+    maxlength: [50, 'Отчество не может превышать 50 символов'],
+    default: ''
   },
   email: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: {
-      name: 'master_email_unique',
-      msg: 'Пользователь с таким email уже существует'
-    },
-    validate: {
-      isEmail: {
-        msg: 'Неверный формат email'
-      },
-      notEmpty: {
-        msg: 'Email не может быть пустым'
-      }
-    }
+    type: String,
+    required: [true, 'Email обязателен'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Неверный формат email']
   },
   password_hash: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-    validate: {
-      notEmpty: {
-        msg: 'Пароль не может быть пустым'
-      },
-      len: {
-        args: [6, 255],
-        msg: 'Пароль должен содержать минимум 6 символов'
-      }
-    }
+    type: String,
+    required: [true, 'Пароль обязателен'],
+    minlength: [6, 'Пароль должен содержать минимум 6 символов']
   },
   role: {
-    type: DataTypes.ENUM('master', 'admin'),
-    defaultValue: 'master',
-    allowNull: false
+    type: String,
+    enum: ['master', 'admin'],
+    default: 'master'
   },
   is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-    allowNull: false
+    type: Boolean,
+    default: true
   },
-  reset_password_token: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  reset_password_expires: {
-    type: DataTypes.DATE,
-    allowNull: true
-  }
+  reset_password_token: String,
+  reset_password_expires: Date,
+  workers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worker'
+  }],
+  maintenance_history: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MaintenanceHistory'
+  }]
 }, {
-  tableName: 'master',
-  timestamps: false, // ← ИЗМЕНЕНИЕ: ставим false, так как этих полей нет в БД
-  underscored: true,
-  hooks: {
-    beforeCreate: async (master) => {
-      if (master.password_hash) {
-        const salt = await bcrypt.genSalt(10);
-        master.password_hash = await bcrypt.hash(master.password_hash, salt);
-      }
-    },
-    beforeUpdate: async (master) => {
-      if (master.changed('password_hash')) {
-        const salt = await bcrypt.genSalt(10);
-        master.password_hash = await bcrypt.hash(master.password_hash, salt);
-      }
-    }
+  timestamps: false,
+  versionKey: '__v'
+});
+
+// Хук для хеширования пароля перед сохранением
+masterSchema.pre('save', async function(next) {
+  if (!this.isModified('password_hash')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password_hash = await bcrypt.hash(this.password_hash, salt);
+    next();
+  } catch (error) {
+    next(error);
   }
 });
 
+// Хук для хеширования пароля перед обновлением
+masterSchema.pre('findOneAndUpdate', async function(next) {
+  const update = this.getUpdate();
+  if (update.password_hash) {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      update.password_hash = await bcrypt.hash(update.password_hash, salt);
+      this.setUpdate(update);
+    } catch (error) {
+      return next(error);
+    }
+  }
+  next();
+});
+
 // Метод для проверки пароля
-Master.prototype.comparePassword = async function(candidatePassword) {
+masterSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password_hash);
 };
 
 // Метод для генерации JWT токена
-Master.prototype.generateJWT = function() {
+masterSchema.methods.generateJWT = function() {
   const jwt = require('jsonwebtoken');
   return jwt.sign(
     {
-      id: this.id,
+      id: this._id,
       email: this.email,
       role: this.role,
       firstName: this.first_name,
@@ -131,5 +106,23 @@ Master.prototype.generateJWT = function() {
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
+
+// Виртуальное поле для полного имени
+masterSchema.virtual('full_name').get(function() {
+  return `${this.last_name} ${this.first_name} ${this.middle_name || ''}`.trim();
+});
+
+// Опции для преобразования JSON
+masterSchema.set('toJSON', {
+  virtuals: true,
+  transform: function(doc, ret) {
+    delete ret.password_hash;
+    delete ret.reset_password_token;
+    delete ret.reset_password_expires;
+    return ret;
+  }
+});
+
+const Master = mongoose.model('Master', masterSchema, 'masters');
 
 module.exports = Master;

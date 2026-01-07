@@ -100,8 +100,8 @@ const MachineList = () => {
   };
 
   const filteredMachines = machines.filter(machine =>
-    machine.id.toString().includes(searchTerm)
-  );
+  machine?.id?.toString().includes(searchTerm)
+);
 
   if (loading) {
     return (

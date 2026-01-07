@@ -1,80 +1,58 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+// models/MaintenanceHistory.js
+const mongoose = require('mongoose');
 
-const MaintenanceHistory = sequelize.define('MaintenanceHistory', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
+const maintenanceHistorySchema = new mongoose.Schema({
   machine_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'machine',
-      key: 'id'
-    },
-    validate: {
-      notNull: {
-        msg: 'ID машины обязателен'
-      }
-    }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Machine',
+    required: [true, 'ID машины обязателен']
   },
   master_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'master',
-      key: 'id'
-    },
-    validate: {
-      notNull: {
-        msg: 'ID мастера обязателен'
-      }
-    }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Master',
+    required: [true, 'ID мастера обязателен']
   },
   state: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      notEmpty: {
-        msg: 'Состояние не может быть пустым'
-      },
-      isIn: {
-        args: [['completed', 'in_progress', 'planned', 'cancelled']],
-        msg: 'Недопустимое состояние'
-      }
-    }
+    type: String,
+    required: [true, 'Состояние обязательно'],
+    enum: {
+      values: ['completed', 'in_progress', 'planned', 'cancelled'],
+      message: 'Недопустимое состояние. Допустимые значения: completed, in_progress, planned, cancelled'
+    },
+    trim: true
   },
   start_date: {
-    type: DataTypes.DATE,
-    allowNull: false,
+    type: Date,
+    required: [true, 'Дата начала обязательна'],
     validate: {
-      notNull: {
-        msg: 'Дата начала обязательна'
+      validator: function(value) {
+        return value instanceof Date && !isNaN(value);
       },
-      isDate: {
-        msg: 'Дата начала должна быть валидной датой'
-      }
+      message: 'Дата начала должна быть валидной датой'
     }
   },
   end_date: {
-    type: DataTypes.DATE,
-    allowNull: true,
+    type: Date,
     validate: {
-      isDate: {
-        msg: 'Дата окончания должна быть валидной датой'
+      validator: function(value) {
+        if (!value) return true; // allow null
+        if (!(value instanceof Date) || isNaN(value)) return false;
+        if (this.start_date && value <= this.start_date) return false;
+        return true;
       },
-      isAfterStartDate(value) {
-        if (value && this.start_date && new Date(value) <= new Date(this.start_date)) {
-          throw new Error('Дата окончания должна быть после даты начала');
-        }
-      }
+      message: 'Дата окончания должна быть после даты начала'
     }
   }
 }, {
-  tableName: 'maintenance_history',
-  timestamps: false
+  timestamps: false,
+  versionKey: '__v'
 });
+
+// Индексы для улучшения производительности запросов
+maintenanceHistorySchema.index({ machine_id: 1 });
+maintenanceHistorySchema.index({ master_id: 1 });
+maintenanceHistorySchema.index({ start_date: -1 });
+
+const MaintenanceHistory = mongoose.model('MaintenanceHistory', maintenanceHistorySchema, 'maintenance_histories');
 
 module.exports = MaintenanceHistory;
