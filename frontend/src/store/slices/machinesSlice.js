@@ -36,7 +36,9 @@ export const createMachine = createAsyncThunk(
 export const updateMachine = createAsyncThunk(
   'machines/updateMachine',
   async ({ id, data }) => {
-    const response = await machinesAPI.update(id, data);
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    const response = await machinesAPI.update(idString, data);
     return response.data;
   }
 );
@@ -44,8 +46,10 @@ export const updateMachine = createAsyncThunk(
 export const deleteMachine = createAsyncThunk(
   'machines/deleteMachine',
   async (id) => {
-    await machinesAPI.delete(id);
-    return id;
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    await machinesAPI.delete(idString);
+    return idString;
   }
 );
 
@@ -100,17 +104,17 @@ const machinesSlice = createSlice({
       })
       // Update machine
       .addCase(updateMachine.fulfilled, (state, action) => {
-        const index = state.items.findIndex(item => item.id === action.payload.data.id);
+        const index = state.items.findIndex(item => item._id === action.payload.data._id);
         if (index !== -1) {
           state.items[index] = action.payload.data;
         }
-        if (state.currentMachine && state.currentMachine.id === action.payload.data.id) {
+        if (state.currentMachine && state.currentMachine._id === action.payload.data._id) {
           state.currentMachine = action.payload.data;
         }
       })
       // Delete machine
       .addCase(deleteMachine.fulfilled, (state, action) => {
-        state.items = state.items.filter(item => item.id !== action.payload);
+        state.items = state.items.filter(item => item._id !== action.payload);
       });
   }
 });

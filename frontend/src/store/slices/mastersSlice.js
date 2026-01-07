@@ -28,7 +28,9 @@ export const createMaster = createAsyncThunk(
 export const updateMaster = createAsyncThunk(
   'masters/updateMaster',
   async ({ id, data }) => {
-    const response = await mastersAPI.update(id, data);
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    const response = await mastersAPI.update(idString, data);
     return response.data;
   }
 );
@@ -36,8 +38,10 @@ export const updateMaster = createAsyncThunk(
 export const deleteMaster = createAsyncThunk(
   'masters/deleteMaster',
   async (id) => {
-    await mastersAPI.delete(id);
-    return id;
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    await mastersAPI.delete(idString);
+    return idString;
   }
 );
 
@@ -84,17 +88,17 @@ const mastersSlice = createSlice({
       })
       // Update master
       .addCase(updateMaster.fulfilled, (state, action) => {
-        const index = state.items.findIndex(item => item.id === action.payload.data.id);
+        const index = state.items.findIndex(item => item._id === action.payload.data._id);
         if (index !== -1) {
           state.items[index] = action.payload.data;
         }
-        if (state.currentMaster && state.currentMaster.id === action.payload.data.id) {
+        if (state.currentMaster && state.currentMaster._id === action.payload.data._id) {
           state.currentMaster = action.payload.data;
         }
       })
       // Delete master
       .addCase(deleteMaster.fulfilled, (state, action) => {
-        state.items = state.items.filter(item => item.id !== action.payload);
+        state.items = state.items.filter(item => item._id !== action.payload);
       });
   }
 });

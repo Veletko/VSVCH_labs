@@ -50,9 +50,17 @@ const MaintenanceForm = ({ maintenance, onClose }) => {
         ? new Date(maintenance.end_date).toISOString().slice(0, 16)
         : '';
       
+      // Извлекаем ID правильно: если это объект (после populate), берем _id, иначе берем значение напрямую
+      const machineId = maintenance.machine_id 
+        ? (typeof maintenance.machine_id === 'object' ? maintenance.machine_id._id : maintenance.machine_id)
+        : '';
+      const masterId = maintenance.master_id 
+        ? (typeof maintenance.master_id === 'object' ? maintenance.master_id._id : maintenance.master_id)
+        : '';
+      
       setFormData({
-        machine_id: maintenance.machine_id || '',
-        master_id: maintenance.master_id || '',
+        machine_id: machineId || '',
+        master_id: masterId || '',
         state: maintenance.state || 'planned',
         start_date: startDate,
         end_date: endDate
@@ -101,15 +109,15 @@ const MaintenanceForm = ({ maintenance, onClose }) => {
 
     try {
       const submitData = {
-        machine_id: parseInt(formData.machine_id),
-        master_id: parseInt(formData.master_id),
+        machine_id: formData.machine_id, // MongoDB ObjectId - строка, не число
+        master_id: formData.master_id,   // MongoDB ObjectId - строка, не число
         state: formData.state,
         start_date: new Date(formData.start_date).toISOString(),
         end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null
       };
 
       if (maintenance) {
-        await dispatch(updateMaintenance({ id: maintenance.id, data: submitData })).unwrap();
+        await dispatch(updateMaintenance({ id: maintenance._id, data: submitData })).unwrap();
       } else {
         await dispatch(createMaintenance(submitData)).unwrap();
       }
@@ -141,13 +149,13 @@ const MaintenanceForm = ({ maintenance, onClose }) => {
         <FormControl fullWidth error={!!errors.machine_id}>
           <InputLabel>Машина *</InputLabel>
           <Select
-            value={formData.machine_id}
+            value={formData.machine_id || ''}
             label="Машина *"
             onChange={handleChange('machine_id')}
           >
             {machines.map((machine) => (
-              <MenuItem key={machine.id} value={machine.id}>
-                Машина #{machine.id}
+              <MenuItem key={machine._id} value={machine._id}>
+                Машина #{machine._id}
               </MenuItem>
             ))}
           </Select>
@@ -161,12 +169,12 @@ const MaintenanceForm = ({ maintenance, onClose }) => {
         <FormControl fullWidth error={!!errors.master_id}>
           <InputLabel>Мастер *</InputLabel>
           <Select
-            value={formData.master_id}
+            value={formData.master_id || ''}
             label="Мастер *"
             onChange={handleChange('master_id')}
           >
             {masters.map((master) => (
-              <MenuItem key={master.id} value={master.id}>
+              <MenuItem key={master._id} value={master._id}>
                 {master.last_name} {master.first_name} {master.middle_name || ''}
               </MenuItem>
             ))}
@@ -181,7 +189,7 @@ const MaintenanceForm = ({ maintenance, onClose }) => {
         <FormControl fullWidth error={!!errors.state}>
           <InputLabel>Статус *</InputLabel>
           <Select
-            value={formData.state}
+            value={formData.state || 'planned'}
             label="Статус *"
             onChange={handleChange('state')}
           >

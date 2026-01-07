@@ -46,7 +46,7 @@ const MasterList = () => {
   };
 
   const confirmDelete = () => {
-    dispatch(deleteMaster(deleteConfirm.id));
+    dispatch(deleteMaster(deleteConfirm._id));
     setDeleteConfirm(null);
   };
 
@@ -60,11 +60,15 @@ const MasterList = () => {
     setEditingMaster(null);
   };
 
-  const filteredMasters = masters.filter(master =>
-    master.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    master.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (master.middle_name && master.middle_name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredMasters = masters.filter(master => {
+    if (!master) return false;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (master.last_name && master.last_name.toLowerCase().includes(searchLower)) ||
+      (master.first_name && master.first_name.toLowerCase().includes(searchLower)) ||
+      (master.middle_name && master.middle_name.toLowerCase().includes(searchLower))
+    );
+  });
 
   if (loading) {
     return (
@@ -121,23 +125,23 @@ const MasterList = () => {
           </TableHead>
           <TableBody>
             {filteredMasters.map((master) => (
-              <TableRow key={master.id}>
-                <TableCell>{master.id}</TableCell>
-                <TableCell>{master.last_name}</TableCell>
-                <TableCell>{master.first_name}</TableCell>
-                <TableCell>{master.middle_name || '-'}</TableCell>
-                <TableCell align="center">
-                  <IconButton
-                    color="primary"
-                    onClick={() => handleEdit(master)}
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDelete(master)}
-                  >
-                    <Delete />
+              <TableRow key={master._id}>
+                <TableCell>{master._id}</TableCell>
+                  <TableCell>{master.last_name || '-'}</TableCell>
+                  <TableCell>{master.first_name || '-'}</TableCell>
+                  <TableCell>{master.middle_name || '-'}</TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEdit(master)}
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDelete(master)}
+                    >
+                      <Delete />
                   </IconButton>
                 </TableCell>
               </TableRow>

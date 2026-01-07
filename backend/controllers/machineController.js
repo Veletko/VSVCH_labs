@@ -13,6 +13,15 @@ class MachineController extends BaseController {
     try {
       const { id } = req.params;
       
+      // Валидируем ID
+      const mongoose = require('mongoose');
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const machine = await Machine.findById(id).populate({
         path: 'maintenance_history',
         populate: {
@@ -33,6 +42,12 @@ class MachineController extends BaseController {
         data: machine
       });
     } catch (error) {
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
       console.error('Error getting machine with maintenance:', error);
       res.status(500).json({
         success: false,
@@ -43,42 +58,37 @@ class MachineController extends BaseController {
 
   // Основной метод удаления
   delete = async (req, res) => {
-    const session = await Machine.startSession();
+    const mongoose = require('mongoose');
     
     try {
-      session.startTransaction();
       const { id } = req.params;
+      
+      // Валидируем ID
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
 
       // 1. Сначала удаляем все связанные записи обслуживания
-      await MaintenanceHistory.deleteMany({ machine_id: id }, { session });
+      await MaintenanceHistory.deleteMany({ machine_id: id });
 
       // 2. Затем удаляем саму машину
-      const deleted = await Machine.findByIdAndDelete(id, { session });
+      const deleted = await Machine.findByIdAndDelete(id);
 
       if (!deleted) {
-        await session.abortTransaction();
-        session.endSession();
         return res.status(404).json({
           success: false,
           error: 'Машина не найдена'
         });
       }
 
-      // 3. Подтверждаем транзакцию
-      await session.commitTransaction();
-      session.endSession();
-
       res.json({
         success: true,
         message: 'Машина и связанные записи обслуживания успешно удалены'
       });
     } catch (error) {
-      // Откатываем транзакцию при ошибке
-      if (session.inTransaction()) {
-        await session.abortTransaction();
-      }
-      session.endSession();
-      
       console.error('Error deleting machine:', error);
       res.status(500).json({
         success: false,
@@ -91,6 +101,15 @@ class MachineController extends BaseController {
   safeDelete = async (req, res) => {
     try {
       const { id } = req.params;
+      const mongoose = require('mongoose');
+      
+      // Валидируем ID
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
 
       // Проверяем, есть ли связанные записи обслуживания
       const maintenanceCount = await MaintenanceHistory.countDocuments({

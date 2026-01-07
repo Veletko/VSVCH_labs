@@ -24,7 +24,6 @@ import { Edit, Delete, Add, Search } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMachines, deleteMachine } from '../../store/slices/machinesSlice';
 import MachineForm from './MachineForm';
-import axios from 'axios';
 
 const MachineList = () => {
   const dispatch = useDispatch();
@@ -40,7 +39,13 @@ const MachineList = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchMachines());
+    dispatch(fetchMachines()).then((result) => {
+      if (result.error) {
+        console.error('Error fetching machines:', result.error);
+      } else {
+        console.log('Machines loaded:', result.payload);
+      }
+    });
   }, [dispatch]);
 
   const handleEdit = (machine) => {
@@ -54,8 +59,13 @@ const MachineList = () => {
 
   const confirmDelete = async () => {
     try {
-      // Используем прямой вызов API через axios
-      await axios.delete(`/api/machines/${deleteConfirm.id}`);
+      // Конвертируем _id в строку
+      const machineId = typeof deleteConfirm._id === 'object' && deleteConfirm._id?.toString 
+        ? deleteConfirm._id.toString() 
+        : String(deleteConfirm._id);
+      
+      // Используем Redux action для удаления (правильный baseURL через API сервис)
+      await dispatch(deleteMachine(machineId)).unwrap();
       
       // Показываем уведомление об успехе
       setSnackbar({
@@ -65,14 +75,16 @@ const MachineList = () => {
       });
       
       // Обновляем список
-      dispatch(fetchMachines());
+      await dispatch(fetchMachines());
     } catch (error) {
       // Обрабатываем ошибку
       console.error('Error deleting machine:', error);
       
       let errorMessage = 'Ошибка при удалении машины';
-      if (error.response?.data?.error) {
+      if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
       
       setSnackbar({
@@ -99,9 +111,9 @@ const MachineList = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const filteredMachines = machines.filter(machine =>
-  machine?.id?.toString().includes(searchTerm)
-);
+  const filteredMachines = machines.filter(machine => {
+    return machine?._id?.toString().includes(searchTerm);
+  });
 
   if (loading) {
     return (
@@ -154,25 +166,35 @@ const MachineList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredMachines.map((machine) => (
-              <TableRow key={machine.id}>
-                <TableCell>{machine.id}</TableCell>
-                <TableCell align="center">
-                  <IconButton
-                    color="primary"
-                    onClick={() => handleEdit(machine)}
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDelete(machine)}
-                  >
-                    <Delete />
-                  </IconButton>
+            {filteredMachines.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={2} align="center">
+                  <Typography variant="body2" color="text.secondary">
+                    Машины не найдены
+                  </Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredMachines.map((machine) => (
+                <TableRow key={machine._id}>
+                  <TableCell>{machine._id}</TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleEdit(machine)}
+                      >
+                        <Edit />
+                      </IconButton>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleDelete(machine)}
+                      >
+                        <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -201,7 +223,7 @@ const MachineList = () => {
         <DialogTitle>Подтверждение удаления</DialogTitle>
         <DialogContent>
           <Typography>
-            Вы уверены, что хотите удалить машину с ID {deleteConfirm?.id}?
+            Вы уверены, что хотите удалить машину с ID {deleteConfirm?._id}?
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Все связанные записи обслуживания также будут удалены.

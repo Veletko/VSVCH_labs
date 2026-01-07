@@ -1,17 +1,69 @@
 // controllers/baseController.js
+const mongoose = require('mongoose');
+
 class BaseController {
   constructor(model) {
     this.model = model;
   }
 
+  // Вспомогательная функция для конвертации ID в ObjectId
+  convertToObjectId(value) {
+    // Если значение null, пустая строка или undefined - возвращаем null
+    if (!value || value === '' || value === 'null' || value === null) return null;
+    // Если это уже ObjectId, возвращаем как есть
+    if (value instanceof mongoose.Types.ObjectId) return value;
+    // Если это валидная строка ObjectId, конвертируем
+    if (typeof value === 'string' && value.trim() !== '' && mongoose.Types.ObjectId.isValid(value)) {
+      return new mongoose.Types.ObjectId(value);
+    }
+    // Иначе возвращаем null (невалидное значение)
+    return null;
+  }
+
   // Получить все записи
    getAll = async (req, res) => {
     try {
-      const records = await this.model.find();
+      const {
+        page = 1,
+        limit = 1000,
+        sortBy = '_id',
+        sortOrder = 'asc',
+        ...filters
+      } = req.query;
+
+      const offset = (page - 1) * limit;
+      const sortDirection = sortOrder.toLowerCase() === 'desc' ? -1 : 1;
+
+      const filter = {};
+      Object.keys(filters).forEach(key => {
+        if (filters[key] && filters[key] !== '') {
+          let value = filters[key];
+          // Если поле заканчивается на _id, конвертируем в ObjectId
+          if (key.endsWith('_id') || key === '_id' || key === 'id') {
+            value = this.convertToObjectId(value);
+          }
+          const mongoKey = key === 'id' ? '_id' : key;
+          filter[mongoKey] = value;
+        }
+      });
+
+      const [records, count] = await Promise.all([
+        this.model.find(filter)
+          .sort({ [sortBy === 'id' ? '_id' : sortBy]: sortDirection })
+          .skip(parseInt(offset))
+          .limit(parseInt(limit)),
+        this.model.countDocuments(filter)
+      ]);
+
       res.json({
         success: true,
         data: records,
-        count: records.length
+        pagination: {
+          current: parseInt(page),
+          total: count,
+          pages: Math.ceil(count / limit),
+          limit: parseInt(limit)
+        }
       });
     } catch (error) {
       res.status(500).json({
@@ -51,7 +103,14 @@ class BaseController {
         if (req.query[key] && req.query[key] !== '') {
           // Преобразуем 'id' в '_id' для MongoDB
           const mongoKey = key === 'id' ? '_id' : key;
-          where[mongoKey] = req.query[key];
+          let value = req.query[key];
+          
+          // Если поле заканчивается на _id, конвертируем в ObjectId
+          if (mongoKey.endsWith('_id') || mongoKey === '_id') {
+            value = this.convertToObjectId(value);
+          }
+          
+          where[mongoKey] = value;
         }
       });
 
@@ -104,6 +163,14 @@ class BaseController {
   // Получить запись по ID
   getById = async (req, res) => {
     try {
+      // Валидируем и конвертируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const record = await this.model.findById(req.params.id);
       
       if (!record) {
@@ -134,6 +201,14 @@ class BaseController {
   // Проверить существование записи
   exists = async (req, res) => {
     try {
+      // Валидируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.json({
+          success: true,
+          exists: false
+        });
+      }
+      
       const record = await this.model.findById(req.params.id);
       res.json({
         success: true,
@@ -155,18 +230,30 @@ class BaseController {
 
   // Создать новую запись
   create = async (req, res) => {
+    let data = {};
     try {
-      const record = await this.model.create(req.body);
+      // Конвертируем поля с _id в ObjectId
+      data = { ...req.body };
+      Object.keys(data).forEach(key => {
+        if (key.endsWith('_id')) {
+          // Конвертируем в ObjectId (функция сама обработает null/пустые значения)
+          data[key] = this.convertToObjectId(data[key]);
+        }
+      });
       
-      // transformId middleware преобразует _id в id
+      const record = await this.model.create(data);
+      
       res.status(201).json({
         success: true,
         data: record
       });
     } catch (error) {
+      console.error('Error creating record:', error);
+      console.error('Request body:', req.body);
+      console.error('Processed data:', data);
       res.status(400).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при создании записи'
       });
     }
   };
@@ -174,9 +261,26 @@ class BaseController {
   // Обновить запись
   update = async (req, res) => {
     try {
+      // Валидируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
+      // Конвертируем поля с _id в ObjectId
+      const data = { ...req.body };
+      Object.keys(data).forEach(key => {
+        if (key.endsWith('_id')) {
+          // Конвертируем в ObjectId (функция сама обработает null/пустые значения)
+          data[key] = this.convertToObjectId(data[key]);
+        }
+      });
+      
       const record = await this.model.findByIdAndUpdate(
         req.params.id,
-        req.body,
+        data,
         { new: true, runValidators: true }
       );
       
@@ -187,12 +291,14 @@ class BaseController {
         });
       }
       
-      // transformId middleware преобразует _id в id
       res.json({
         success: true,
         data: record
       });
     } catch (error) {
+      console.error('Error updating record:', error);
+      console.error('Request params:', req.params);
+      console.error('Request body:', req.body);
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -201,7 +307,7 @@ class BaseController {
       }
       res.status(400).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при обновлении записи'
       });
     }
   };
@@ -209,6 +315,14 @@ class BaseController {
   // Удалить запись
   delete = async (req, res) => {
     try {
+      // Валидируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const record = await this.model.findByIdAndDelete(req.params.id);
       
       if (!record) {

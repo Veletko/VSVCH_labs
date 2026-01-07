@@ -44,7 +44,9 @@ export const createMaintenance = createAsyncThunk(
 export const updateMaintenance = createAsyncThunk(
   'maintenance/updateMaintenance',
   async ({ id, data }) => {
-    const response = await maintenanceAPI.update(id, data);
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    const response = await maintenanceAPI.update(idString, data);
     return response.data;
   }
 );
@@ -52,8 +54,10 @@ export const updateMaintenance = createAsyncThunk(
 export const deleteMaintenance = createAsyncThunk(
   'maintenance/deleteMaintenance',
   async (id) => {
-    await maintenanceAPI.delete(id);
-    return id;
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    await maintenanceAPI.delete(idString);
+    return idString;
   }
 );
 
@@ -130,17 +134,17 @@ const maintenanceSlice = createSlice({
       })
       // Update maintenance
       .addCase(updateMaintenance.fulfilled, (state, action) => {
-        const index = state.items.findIndex(item => item.id === action.payload.data.id);
+        const index = state.items.findIndex(item => item._id === action.payload.data._id);
         if (index !== -1) {
           state.items[index] = action.payload.data;
         }
-        const indexDetailed = state.itemsDetailed.findIndex(item => item.id === action.payload.data.id);
+        const indexDetailed = state.itemsDetailed.findIndex(item => item._id === action.payload.data._id);
         if (indexDetailed !== -1) {
           state.itemsDetailed[indexDetailed] = action.payload.data;
         }
         // Update in itemsByState if exists
         Object.keys(state.itemsByState).forEach(stateKey => {
-          const stateIndex = state.itemsByState[stateKey].findIndex(item => item.id === action.payload.data.id);
+          const stateIndex = state.itemsByState[stateKey].findIndex(item => item._id === action.payload.data._id);
           if (stateIndex !== -1) {
             if (action.payload.data.state === stateKey) {
               state.itemsByState[stateKey][stateIndex] = action.payload.data;
@@ -150,17 +154,17 @@ const maintenanceSlice = createSlice({
             }
           }
         });
-        if (state.currentMaintenance && state.currentMaintenance.id === action.payload.data.id) {
+        if (state.currentMaintenance && state.currentMaintenance._id === action.payload.data._id) {
           state.currentMaintenance = action.payload.data;
         }
       })
       // Delete maintenance
       .addCase(deleteMaintenance.fulfilled, (state, action) => {
-        state.items = state.items.filter(item => item.id !== action.payload);
-        state.itemsDetailed = state.itemsDetailed.filter(item => item.id !== action.payload);
+        state.items = state.items.filter(item => item._id !== action.payload);
+        state.itemsDetailed = state.itemsDetailed.filter(item => item._id !== action.payload);
         // Remove from itemsByState
         Object.keys(state.itemsByState).forEach(stateKey => {
-          state.itemsByState[stateKey] = state.itemsByState[stateKey].filter(item => item.id !== action.payload);
+          state.itemsByState[stateKey] = state.itemsByState[stateKey].filter(item => item._id !== action.payload);
         });
       });
   }

@@ -21,7 +21,7 @@ const MachineForm = ({ machine, onClose }) => {
       if (machine) {
         // Для машины нет полей для редактирования, только ID
         // Но на случай если в будущем появятся поля
-        await dispatch(updateMachine({ id: machine.id, data: {} })).unwrap();
+        await dispatch(updateMachine({ id: machine._id, data: {} })).unwrap();
       } else {
         // Создание новой машины - просто пустой объект, ID генерируется на сервере
         await dispatch(createMachine({})).unwrap();
@@ -43,7 +43,7 @@ const MachineForm = ({ machine, onClose }) => {
 
         {machine ? (
           <Typography variant="body1">
-            Машина с ID {machine.id}. В данный момент модель машины не содержит дополнительных полей для редактирования.
+            Машина с ID {machine._id}. В данный момент модель машины не содержит дополнительных полей для редактирования.
           </Typography>
         ) : (
           <Typography variant="body1">

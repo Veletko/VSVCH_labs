@@ -59,31 +59,53 @@ const masterSchema = new mongoose.Schema({
 });
 
 // Хук для хеширования пароля перед сохранением
-masterSchema.pre('save', async function(next) {
-  if (!this.isModified('password_hash')) return next();
+masterSchema.pre('save', async function() {
+  // Если password_hash не изменен, пропускаем хеширование
+  if (!this.isModified('password_hash')) {
+    return;
+  }
   
   try {
     const salt = await bcrypt.genSalt(10);
     this.password_hash = await bcrypt.hash(this.password_hash, salt);
-    next();
   } catch (error) {
-    next(error);
+    throw error;
   }
 });
 
 // Хук для хеширования пароля перед обновлением
-masterSchema.pre('findOneAndUpdate', async function(next) {
+masterSchema.pre(['findOneAndUpdate', 'findByIdAndUpdate'], async function() {
   const update = this.getUpdate();
-  if (update.password_hash) {
-    try {
-      const salt = await bcrypt.genSalt(10);
-      update.password_hash = await bcrypt.hash(update.password_hash, salt);
-      this.setUpdate(update);
-    } catch (error) {
-      return next(error);
+  
+  // Проверяем, есть ли password_hash в обновлении
+  let passwordToHash = null;
+  if (update && typeof update === 'object') {
+    // Если update содержит $set, проверяем там
+    if (update.$set && update.$set.password_hash) {
+      passwordToHash = update.$set.password_hash;
+    } else if (update.password_hash && !update.$set) {
+      // Если password_hash напрямую в update
+      passwordToHash = update.password_hash;
     }
   }
-  next();
+  
+  if (passwordToHash) {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(passwordToHash, salt);
+      
+      // Обновляем password_hash в правильном месте
+      if (update.$set) {
+        update.$set.password_hash = hashedPassword;
+      } else {
+        update.password_hash = hashedPassword;
+      }
+      
+      this.setUpdate(update);
+    } catch (error) {
+      throw error;
+    }
+  }
 });
 
 // Метод для проверки пароля

@@ -21,9 +21,17 @@ class MaintenanceController extends BaseController {
       } = req.query;
 
       const filter = {};
+      const mongoose = require('mongoose');
       Object.keys(filters).forEach(key => {
         if (filters[key] && filters[key] !== '') {
-          filter[key] = filters[key];
+          let value = filters[key];
+          // Если поле заканчивается на _id, конвертируем в ObjectId
+          if (key.endsWith('_id') || key === '_id') {
+            if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+              value = new mongoose.Types.ObjectId(value);
+            }
+          }
+          filter[key] = value;
         }
       });
 
@@ -67,6 +75,15 @@ class MaintenanceController extends BaseController {
   // Получить запись обслуживания с детальной информацией
   getDetailed = async (req, res) => {
     try {
+      // Валидируем ID
+      const mongoose = require('mongoose');
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const maintenance = await MaintenanceHistory.findById(req.params.id)
         .populate({
           path: 'machine_id',
@@ -89,6 +106,12 @@ class MaintenanceController extends BaseController {
         data: maintenance
       });
     } catch (error) {
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
       res.status(500).json({
         success: false,
         error: error.message

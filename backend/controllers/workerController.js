@@ -23,9 +23,17 @@ class WorkerController extends BaseController {
       const sortDirection = sortOrder.toLowerCase() === 'desc' ? -1 : 1;
 
       const filter = {};
+      const mongoose = require('mongoose');
       Object.keys(filters).forEach(key => {
         if (filters[key] && filters[key] !== '') {
-          filter[key] = filters[key];
+          let value = filters[key];
+          // Если поле заканчивается на _id, конвертируем в ObjectId
+          if (key.endsWith('_id') || key === '_id') {
+            if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+              value = new mongoose.Types.ObjectId(value);
+            }
+          }
+          filter[key] = value;
         }
       });
 
@@ -89,9 +97,17 @@ class WorkerController extends BaseController {
   getAllFiltered = async (req, res) => {
     try {
       const filter = {};
+      const mongoose = require('mongoose');
       Object.keys(req.query).forEach(key => {
         if (req.query[key] && req.query[key] !== '') {
-          filter[key] = req.query[key];
+          let value = req.query[key];
+          // Если поле заканчивается на _id, конвертируем в ObjectId
+          if (key.endsWith('_id') || key === '_id') {
+            if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+              value = new mongoose.Types.ObjectId(value);
+            }
+          }
+          filter[key] = value;
         }
       });
 
@@ -149,6 +165,15 @@ class WorkerController extends BaseController {
   // Получить запись по ID - ВСЕГДА с информацией о мастере
   getById = async (req, res) => {
     try {
+      // Валидируем ID
+      const mongoose = require('mongoose');
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const record = await Worker.findById(req.params.id)
         .populate({
           path: 'master_id',
@@ -167,6 +192,12 @@ class WorkerController extends BaseController {
         data: record
       });
     } catch (error) {
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
       res.status(500).json({
         success: false,
         error: error.message
@@ -177,6 +208,15 @@ class WorkerController extends BaseController {
   // Получить рабочего с информацией о мастере (специальный метод)
   getWithMaster = async (req, res) => {
     try {
+      // Валидируем ID
+      const mongoose = require('mongoose');
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const worker = await Worker.findById(req.params.id)
         .populate({
           path: 'master_id',

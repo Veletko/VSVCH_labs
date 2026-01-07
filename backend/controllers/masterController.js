@@ -1,4 +1,5 @@
 // controllers/masterController.js
+const mongoose = require('mongoose');
 const BaseController = require('./baseController');
 const Master = require('../models/Master');
 
@@ -58,6 +59,14 @@ class MasterController extends BaseController {
   // Получить мастера с его обслуживаниями
   getWithMaintenance = async (req, res) => {
     try {
+      // Валидируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const master = await Master.findById(req.params.id)
         .populate({
           path: 'maintenance_history',
@@ -93,9 +102,83 @@ class MasterController extends BaseController {
     }
   };
 
+  // Переопределяем update для правильной обработки пароля
+  update = async (req, res) => {
+    try {
+      // Валидируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
+      const data = { ...req.body };
+      
+      // Если password_hash не передан или пустой, удаляем его из обновления
+      // чтобы не нарушать валидацию required
+      if (!data.password_hash || data.password_hash === '') {
+        delete data.password_hash;
+      }
+      
+      // Конвертируем is_active из строки в boolean если нужно
+      if (data.is_active !== undefined) {
+        if (typeof data.is_active === 'string') {
+          data.is_active = data.is_active === 'true';
+        }
+      }
+      
+      // Конвертируем поля с _id в ObjectId
+      Object.keys(data).forEach(key => {
+        if (key.endsWith('_id')) {
+          // Используем метод из BaseController
+          data[key] = this.convertToObjectId(data[key]);
+        }
+      });
+      
+      const record = await Master.findByIdAndUpdate(
+        req.params.id,
+        data,
+        { new: true, runValidators: true }
+      );
+      
+      if (!record) {
+        return res.status(404).json({
+          success: false,
+          error: 'Мастер не найден'
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: record
+      });
+    } catch (error) {
+      console.error('Error updating master:', error);
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };
+
   // Статистика по мастеру
   getStatistics = async (req, res) => {
     try {
+      // Валидируем ID
+      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
+        });
+      }
+      
       const master = await Master.findById(req.params.id)
         .populate({
           path: 'maintenance_history',

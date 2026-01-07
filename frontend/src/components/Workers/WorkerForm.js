@@ -11,7 +11,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import { createWorker, updateWorker } from '../../store/slices/workersSlice';
+import { createWorker, updateWorker, fetchWorkers } from '../../store/slices/workersSlice';
 import { fetchMasters } from '../../store/slices/mastersSlice';
 
 const WorkerForm = ({ worker, onClose }) => {
@@ -32,11 +32,16 @@ const WorkerForm = ({ worker, onClose }) => {
 
   useEffect(() => {
     if (worker) {
+      // Извлекаем ID правильно: если это объект (после populate), берем _id, иначе берем значение напрямую
+      const masterId = worker.master_id 
+        ? (typeof worker.master_id === 'object' ? worker.master_id._id : worker.master_id)
+        : '';
+      
       setFormData({
         last_name: worker.last_name || '',
         first_name: worker.first_name || '',
         middle_name: worker.middle_name || '',
-        master_id: worker.master_id || ''
+        master_id: masterId || ''
       });
     }
   }, [worker]);
@@ -66,18 +71,25 @@ const WorkerForm = ({ worker, onClose }) => {
 
     try {
       const submitData = {
-        ...formData,
-        master_id: formData.master_id || null
+        last_name: formData.last_name.trim(),
+        first_name: formData.first_name.trim(),
+        middle_name: formData.middle_name ? formData.middle_name.trim() : '',
+        // Если master_id пустая строка, отправляем null, иначе отправляем как есть
+        master_id: formData.master_id && formData.master_id.trim() !== '' ? formData.master_id.trim() : null
       };
 
       if (worker) {
-        await dispatch(updateWorker({ id: worker.id, data: submitData })).unwrap();
+        await dispatch(updateWorker({ id: worker._id, data: submitData })).unwrap();
       } else {
         await dispatch(createWorker(submitData)).unwrap();
       }
+      // Обновляем список рабочих после создания/обновления
+      await dispatch(fetchWorkers());
       onClose();
     } catch (error) {
-      setSubmitError(error.message || 'Произошла ошибка при сохранении');
+      console.error('Error saving worker:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Произошла ошибка при сохранении';
+      setSubmitError(errorMessage);
     }
   };
 
@@ -132,7 +144,7 @@ const WorkerForm = ({ worker, onClose }) => {
           >
             <MenuItem value="">Не назначен</MenuItem>
             {masters.map((master) => (
-              <MenuItem key={master.id} value={master.id}>
+              <MenuItem key={master._id} value={master._id}>
                 {master.last_name} {master.first_name} {master.middle_name}
               </MenuItem>
             ))}

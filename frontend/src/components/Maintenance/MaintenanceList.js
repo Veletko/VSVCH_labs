@@ -66,7 +66,7 @@ const MaintenanceList = () => {
   };
 
   const confirmDelete = async () => {
-    await dispatch(deleteMaintenance(deleteConfirm.id)).unwrap();
+    await dispatch(deleteMaintenance(deleteConfirm._id)).unwrap();
     // Обновляем список после удаления
     dispatch(fetchMaintenanceDetailed());
     setDeleteConfirm(null);
@@ -95,12 +95,14 @@ const MaintenanceList = () => {
 
   const filteredMaintenance = maintenanceItems.filter(item => {
     const matchesSearch = 
-      item.id.toString().includes(searchTerm) ||
-      (item.machine && item.machine.id.toString().includes(searchTerm)) ||
-      (item.master && (
-        item.master.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.master.first_name.toLowerCase().includes(searchTerm.toLowerCase())
-      ));
+      item._id.toString().includes(searchTerm) ||
+      (item.machine_id && typeof item.machine_id === 'object' && item.machine_id._id && item.machine_id._id.toString().includes(searchTerm)) ||
+      (item.machine_id && typeof item.machine_id === 'string' && item.machine_id.includes(searchTerm)) ||
+      (item.master_id && typeof item.master_id === 'object' && (
+        (item.master_id.last_name && item.master_id.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.master_id.first_name && item.master_id.first_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      )) ||
+      (item.master_id && typeof item.master_id === 'string' && item.master_id.includes(searchTerm));
     
     const matchesState = !stateFilter || item.state === stateFilter;
     
@@ -179,16 +181,38 @@ const MaintenanceList = () => {
           </TableHead>
           <TableBody>
             {filteredMaintenance.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.id}</TableCell>
+              <TableRow key={item._id}>
+                <TableCell>{item._id}</TableCell>
                 <TableCell>
-                  {item.machine ? `Машина #${item.machine.id}` : `ID: ${item.machine_id}`}
+                  {(() => {
+                    // После populate machine_id становится объектом с _id
+                    if (item.machine_id && typeof item.machine_id === 'object' && item.machine_id._id) {
+                      return `Машина #${item.machine_id._id}`;
+                    }
+                    // Если это строка (до populate или если populate не сработал)
+                    if (item.machine_id && typeof item.machine_id === 'string') {
+                      return `ID: ${item.machine_id}`;
+                    }
+                    return 'Не указана';
+                  })()}
                 </TableCell>
                 <TableCell>
-                  {item.master 
-                    ? `${item.master.last_name} ${item.master.first_name} ${item.master.middle_name || ''}`.trim()
-                    : `ID: ${item.master_id}`
-                  }
+                  {(() => {
+                    // После populate master_id становится объектом
+                    if (item.master_id && typeof item.master_id === 'object') {
+                      if (item.master_id._id && (item.master_id.last_name || item.master_id.first_name)) {
+                        return `${item.master_id.last_name || ''} ${item.master_id.first_name || ''} ${item.master_id.middle_name || ''}`.trim();
+                      }
+                      if (item.master_id._id) {
+                        return `ID: ${item.master_id._id}`;
+                      }
+                    }
+                    // Если это строка
+                    if (item.master_id && typeof item.master_id === 'string') {
+                      return `ID: ${item.master_id}`;
+                    }
+                    return 'Не указан';
+                  })()}
                 </TableCell>
                 <TableCell>
                   <Chip 
@@ -243,7 +267,7 @@ const MaintenanceList = () => {
         <DialogTitle>Подтверждение удаления</DialogTitle>
         <DialogContent>
           <Typography>
-            Вы уверены, что хотите удалить запись обслуживания с ID {deleteConfirm?.id}?
+            Вы уверены, что хотите удалить запись обслуживания с ID {deleteConfirm?._id}?
           </Typography>
         </DialogContent>
         <DialogActions>

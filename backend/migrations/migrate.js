@@ -2,15 +2,31 @@
 
 require('dotenv').config();
 const CreateTablesMigration = require('./001-create-tables');
+const FixIdsMigration = require('./002-fix-ids');
 
 async function main() {
   console.log('🏭 Factory Database Migration Tool');
   console.log('===================================\n');
   
-  const migration = new CreateTablesMigration();
-  
   try {
-    await migration.run();
+    // Сначала создаем таблицы, если их нет
+    console.log('📋 Шаг 1: Создание коллекций...\n');
+    const createMigration = new CreateTablesMigration();
+    try {
+      await createMigration.run();
+    } catch (error) {
+      if (error.message.includes('already exists')) {
+        console.log('ℹ️  Коллекции уже существуют, пропускаем создание');
+      } else {
+        throw error;
+      }
+    }
+    
+    // Затем исправляем ID
+    console.log('\n📋 Шаг 2: Исправление ID...\n');
+    const fixIdsMigration = new FixIdsMigration();
+    await fixIdsMigration.run();
+    
     console.log('\n✅ База данных готова к использованию!');
     console.log('📁 Сервер можно запускать командой: node server.js');
   } catch (error) {

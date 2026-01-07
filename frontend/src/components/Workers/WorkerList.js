@@ -46,8 +46,10 @@ const WorkerList = () => {
     setDeleteConfirm(worker);
   };
 
-  const confirmDelete = () => {
-    dispatch(deleteWorker(deleteConfirm.id));
+  const confirmDelete = async () => {
+    await dispatch(deleteWorker(deleteConfirm._id)).unwrap();
+    // Обновляем список после удаления
+    await dispatch(fetchWorkers());
     setDeleteConfirm(null);
   };
 
@@ -61,12 +63,15 @@ const WorkerList = () => {
     setEditingWorker(null);
   };
 
-  const filteredWorkers = workers.filter(worker =>
-    worker.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    worker.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (worker.middle_name && worker.middle_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (worker.master && worker.master.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredWorkers = workers.filter(worker => {
+    const master = worker.master_id && typeof worker.master_id === 'object' ? worker.master_id : null;
+    return (
+      worker.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      worker.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (worker.middle_name && worker.middle_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (master && master.last_name && master.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  });
 
   if (loading) {
     return (
@@ -124,15 +129,15 @@ const WorkerList = () => {
           </TableHead>
           <TableBody>
             {filteredWorkers.map((worker) => (
-              <TableRow key={worker.id}>
-                <TableCell>{worker.id}</TableCell>
+              <TableRow key={worker._id}>
+                <TableCell>{worker._id}</TableCell>
                 <TableCell>{worker.last_name}</TableCell>
                 <TableCell>{worker.first_name}</TableCell>
                 <TableCell>{worker.middle_name || '-'}</TableCell>
                 <TableCell>
-                  {worker.master ? (
+                  {worker.master_id && typeof worker.master_id === 'object' ? (
                     <Chip 
-                      label={`${worker.master.last_name} ${worker.master.first_name}`}
+                      label={`${worker.master_id.last_name} ${worker.master_id.first_name}`}
                       size="small"
                       color="primary"
                       variant="outlined"

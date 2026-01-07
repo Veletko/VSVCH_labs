@@ -28,7 +28,9 @@ export const createWorker = createAsyncThunk(
 export const updateWorker = createAsyncThunk(
   'workers/updateWorker',
   async ({ id, data }) => {
-    const response = await workersAPI.update(id, data);
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    const response = await workersAPI.update(idString, data);
     return response.data;
   }
 );
@@ -36,8 +38,10 @@ export const updateWorker = createAsyncThunk(
 export const deleteWorker = createAsyncThunk(
   'workers/deleteWorker',
   async (id) => {
-    await workersAPI.delete(id);
-    return id;
+    // Конвертируем id в строку, если это ObjectId
+    const idString = typeof id === 'object' && id?.toString ? id.toString() : String(id);
+    await workersAPI.delete(idString);
+    return idString;
   }
 );
 
@@ -84,17 +88,17 @@ const workersSlice = createSlice({
       })
       // Update worker
       .addCase(updateWorker.fulfilled, (state, action) => {
-        const index = state.items.findIndex(item => item.id === action.payload.data.id);
+        const index = state.items.findIndex(item => item._id === action.payload.data._id);
         if (index !== -1) {
           state.items[index] = action.payload.data;
         }
-        if (state.currentWorker && state.currentWorker.id === action.payload.data.id) {
+        if (state.currentWorker && state.currentWorker._id === action.payload.data._id) {
           state.currentWorker = action.payload.data;
         }
       })
       // Delete worker
       .addCase(deleteWorker.fulfilled, (state, action) => {
-        state.items = state.items.filter(item => item.id !== action.payload);
+        state.items = state.items.filter(item => item._id !== action.payload);
       });
   }
 });

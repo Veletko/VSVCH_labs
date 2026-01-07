@@ -8,7 +8,7 @@ import {
   Grid
 } from '@mui/material';
 import { useDispatch } from 'react-redux';
-import { createMaster, updateMaster } from '../../store/slices/mastersSlice';
+import { createMaster, updateMaster, fetchMasters } from '../../store/slices/mastersSlice';
 
 const MasterForm = ({ master, onClose }) => {
   const dispatch = useDispatch();
@@ -89,10 +89,12 @@ const MasterForm = ({ master, onClose }) => {
       }
 
       if (master) {
-        await dispatch(updateMaster({ id: master.id, data: dataToSend })).unwrap();
+        await dispatch(updateMaster({ id: master._id, data: dataToSend })).unwrap();
       } else {
         await dispatch(createMaster(dataToSend)).unwrap();
       }
+      // Обновляем список мастеров после создания/обновления
+      await dispatch(fetchMasters());
       onClose();
     } catch (error) {
       setSubmitError(error.message || 'Произошла ошибка при сохранении');
@@ -180,7 +182,7 @@ const MasterForm = ({ master, onClose }) => {
             <TextField
               select
               label="Роль"
-              value={formData.role}
+              value={formData.role || 'master'}
               onChange={handleChange('role')}
               fullWidth
               SelectProps={{
@@ -196,15 +198,15 @@ const MasterForm = ({ master, onClose }) => {
             <TextField
               select
               label="Статус"
-              value={formData.is_active}
-              onChange={handleChange('is_active')}
+              value={formData.is_active !== undefined ? String(formData.is_active) : 'true'}
+              onChange={(e) => handleChange('is_active')({ target: { value: e.target.value === 'true' } })}
               fullWidth
               SelectProps={{
                 native: true,
               }}
             >
-              <option value={true}>Активен</option>
-              <option value={false}>Неактивен</option>
+              <option value="true">Активен</option>
+              <option value="false">Неактивен</option>
             </TextField>
           </Grid>
         </Grid>
