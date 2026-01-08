@@ -11,7 +11,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import { createWorker, updateWorker } from '../../store/slices/workersSlice';
+import { createWorker, updateWorker, fetchWorkers } from '../../store/slices/workersSlice';
 import { fetchMasters } from '../../store/slices/mastersSlice';
 
 const WorkerForm = ({ worker, onClose }) => {
@@ -32,11 +32,29 @@ const WorkerForm = ({ worker, onClose }) => {
 
   useEffect(() => {
     if (worker) {
+      // Правильно извлекаем master_id: может быть либо worker.master_id (число/строка), либо worker.master.id (объект)
+      let masterId = '';
+      if (worker.master && worker.master.id) {
+        // Если мастер загружен как объект (populated)
+        masterId = worker.master.id;
+      } else if (worker.master_id) {
+        // Если master_id указан напрямую
+        masterId = worker.master_id;
+      }
+
       setFormData({
         last_name: worker.last_name || '',
         first_name: worker.first_name || '',
         middle_name: worker.middle_name || '',
-        master_id: worker.master_id || ''
+        master_id: masterId || ''
+      });
+    } else {
+      // Сбрасываем форму при закрытии
+      setFormData({
+        last_name: '',
+        first_name: '',
+        middle_name: '',
+        master_id: ''
       });
     }
   }, [worker]);
@@ -75,6 +93,8 @@ const WorkerForm = ({ worker, onClose }) => {
       } else {
         await dispatch(createWorker(submitData)).unwrap();
       }
+      // Обновляем список рабочих чтобы показать актуальную информацию о мастере
+      await dispatch(fetchWorkers());
       onClose();
     } catch (error) {
       setSubmitError(error.message || 'Произошла ошибка при сохранении');

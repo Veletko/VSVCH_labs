@@ -1,58 +1,38 @@
 const BaseController = require('./baseController');
-const { MaintenanceHistory, Machine, Master } = require('../models/associations');
-const { Op } = require('sequelize');
+const RepositoryFactory = require('../db/factories/RepositoryFactory');
 
 class MaintenanceController extends BaseController {
   constructor() {
-    super(MaintenanceHistory);
+    super(RepositoryFactory.getMaintenanceRepository());
   }
 
-  // Получить все записи обслуживания с информацией о машине и мастере
+  // Получить все записи обслуживания с детальной информацией
   getAllDetailed = async (req, res) => {
     try {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'id',
-        sortOrder = 'ASC',
+        sortBy = 'start_date',
+        sortOrder = 'DESC',
         ...filters
       } = req.query;
 
-      const where = {};
-      Object.keys(filters).forEach(key => {
-        if (filters[key] && filters[key] !== '') {
-          where[key] = filters[key];
-        }
-      });
+      const offset = (parseInt(page) - 1) * parseInt(limit);
 
-      const offset = (page - 1) * limit;
-
-      const { count, rows } = await MaintenanceHistory.findAndCountAll({
-        where,
-        include: [
-          {
-            model: Machine,
-            as: 'machine',
-            attributes: ['id']
-          },
-          {
-            model: Master,
-            as: 'master',
-            attributes: ['id', 'last_name', 'first_name', 'middle_name']
-          }
-        ],
+      const result = await this.repository.findAllDetailed({
+        where: filters,
         order: [[sortBy, sortOrder]],
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset
       });
 
       res.json({
         success: true,
-        data: rows,
+        data: result.rows,
         pagination: {
           current: parseInt(page),
-          total: count,
-          pages: Math.ceil(count / limit),
+          total: result.count,
+          pages: Math.ceil(result.count / parseInt(limit)),
           limit: parseInt(limit)
         }
       });
@@ -64,31 +44,19 @@ class MaintenanceController extends BaseController {
     }
   };
 
-  // Получить запись обслуживания с детальной информацией
+  // Получить запись обслуживания с детальной информацией по ID
   getDetailed = async (req, res) => {
     try {
-      const maintenance = await MaintenanceHistory.findByPk(req.params.id, {
-        include: [
-          {
-            model: Machine,
-            as: 'machine',
-            attributes: ['id']
-          },
-          {
-            model: Master,
-            as: 'master',
-            attributes: ['id', 'last_name', 'first_name', 'middle_name']
-          }
-        ]
-      });
-      
+      const { id } = req.params;
+      const maintenance = await this.repository.findByIdDetailed(id);
+
       if (!maintenance) {
         return res.status(404).json({
           success: false,
           error: 'Запись обслуживания не найдена'
         });
       }
-      
+
       res.json({
         success: true,
         data: maintenance
@@ -101,39 +69,34 @@ class MaintenanceController extends BaseController {
     }
   };
 
-  // Получить обслуживание по статусу
+  // Получить записи по состоянию
   getByState = async (req, res) => {
     try {
       const { state } = req.params;
-      const { page = 1, limit = 10 } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'start_date',
+        sortOrder = 'DESC',
+        ...filters
+      } = req.query;
 
-      const offset = (page - 1) * limit;
+      const offset = (parseInt(page) - 1) * parseInt(limit);
 
-      const { count, rows } = await MaintenanceHistory.findAndCountAll({
-        where: { state },
-        include: [
-          {
-            model: Machine,
-            as: 'machine'
-          },
-          {
-            model: Master,
-            as: 'master',
-            attributes: ['id', 'last_name', 'first_name', 'middle_name']
-          }
-        ],
+      const result = await this.repository.findByState(state, {
+        where: filters,
+        order: [[sortBy, sortOrder]],
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        offset
       });
 
       res.json({
         success: true,
-        data: rows,
-        state,
+        data: result.rows,
         pagination: {
           current: parseInt(page),
-          total: count,
-          pages: Math.ceil(count / limit),
+          total: result.count,
+          pages: Math.ceil(result.count / parseInt(limit)),
           limit: parseInt(limit)
         }
       });
@@ -146,8 +109,4 @@ class MaintenanceController extends BaseController {
   };
 }
 
-// Создаем экземпляр контроллера
-const maintenanceController = new MaintenanceController();
-
-// Экспортируем экземпляр контроллера целиком
-module.exports = maintenanceController;
+module.exports = new MaintenanceController();

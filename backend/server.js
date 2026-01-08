@@ -1,10 +1,12 @@
 require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
-const sequelize = require('./config/database');
+const { dbAdapter, dbType } = require('./config/database');
 
-// Импортируем ассоциации
-require('./models/associations');
+// Импортируем ассоциации (для Sequelize)
+if (dbType === 'sequelize') {
+  require('./models/associations');
+}
 
 // Импортируем маршруты
 const masterRoutes = require('./routes/masters');
@@ -45,15 +47,19 @@ app.get('/api/health', (req, res) => {
 // Подключение к базе данных и запуск сервера
 const startServer = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('✅ Database connection established successfully.');
+    // Используем адаптер для подключения к БД
+    await dbAdapter.authenticate();
+    console.log(`✅ Database connection established successfully (${dbType}).`);
     
-    // Синхронизируем модели с базой данных
-    await sequelize.sync({ force: false }); // force: true только в разработке!
-    console.log('✅ Database synchronized.');
+    // Синхронизируем модели с базой данных (только для Sequelize)
+    if (dbType === 'sequelize') {
+      await dbAdapter.sync({ force: false }); // force: true только в разработке!
+      console.log('✅ Database models synchronized.');
+    }
     
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`📊 Database Type: ${dbType}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
       console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
       console.log(`👨‍🔧 Masters API: http://localhost:${PORT}/api/masters`);

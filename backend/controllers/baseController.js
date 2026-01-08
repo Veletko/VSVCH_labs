@@ -1,19 +1,65 @@
-const { Op } = require('sequelize');
-
+/**
+ * Базовый контроллер
+ * Использует репозитории для работы с данными вместо прямого доступа к моделям
+ */
 class BaseController {
-  constructor(model) {
-    this.model = model;
+  constructor(repository) {
+    if (!repository) {
+      throw new Error('Repository is required for BaseController');
+    }
+    this.repository = repository;
   }
 
   // Получить все записи
   getAll = async (req, res) => {
     try {
-      const records = await this.model.findAll();
-      res.json({
+      const {
+        page,
+        limit,
+        sortBy = 'id',
+        sortOrder = 'ASC',
+        ...filters
+      } = req.query;
+
+      let records;
+      let count;
+
+      if (page && limit) {
+        // Пагинация
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const result = await this.repository.findAndCountAll({
+          where: filters,
+          order: [[sortBy, sortOrder]],
+          limit: parseInt(limit),
+          offset
+        });
+        records = result.rows;
+        count = result.count;
+      } else {
+        // Без пагинации
+        records = await this.repository.findAll({
+          where: filters,
+          order: [[sortBy, sortOrder]]
+        });
+        count = records.length;
+      }
+
+      const response = {
         success: true,
         data: records,
-        count: records.length
-      });
+        count
+      };
+
+      if (page && limit) {
+        response.pagination = {
+          current: parseInt(page),
+          total: count,
+          pages: Math.ceil(count / parseInt(limit)),
+          limit: parseInt(limit)
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -26,7 +72,7 @@ class BaseController {
   getAllSorted = async (req, res) => {
     try {
       const { sortBy = 'id', sortOrder = 'ASC' } = req.query;
-      const records = await this.model.findAll({
+      const records = await this.repository.findAll({
         order: [[sortBy, sortOrder]]
       });
       res.json({
@@ -52,7 +98,7 @@ class BaseController {
         }
       });
 
-      const records = await this.model.findAll({ where });
+      const records = await this.repository.findAll({ where });
       res.json({
         success: true,
         data: records,
@@ -69,7 +115,7 @@ class BaseController {
   // Поиск записей
   search = async (req, res) => {
     try {
-      const { q, field = 'name' } = req.query;
+      const { q, field, operator = 'OR' } = req.query;
       
       if (!q) {
         return res.status(400).json({
@@ -78,13 +124,14 @@ class BaseController {
         });
       }
 
-      const records = await this.model.findAll({
-        where: {
-          [field]: {
-            [Op.like]: `%${q}%`
-          }
-        }
-      });
+      // Если указано одно поле
+      const fields = field ? [field] : ['name', 'last_name', 'first_name'];
+
+      const records = await this.repository.search({
+        fields,
+        query: q,
+        operator
+      }, req.query);
 
       res.json({
         success: true,
@@ -102,7 +149,7 @@ class BaseController {
   // Получить запись по ID
   getById = async (req, res) => {
     try {
-      const record = await this.model.findByPk(req.params.id);
+      const record = await this.repository.findById(req.params.id);
       
       if (!record) {
         return res.status(404).json({
@@ -126,10 +173,10 @@ class BaseController {
   // Проверить существование записи
   exists = async (req, res) => {
     try {
-      const record = await this.model.findByPk(req.params.id);
+      const exists = await this.repository.exists(req.params.id);
       res.json({
         success: true,
-        exists: !!record
+        exists
       });
     } catch (error) {
       res.status(500).json({
@@ -142,7 +189,7 @@ class BaseController {
   // Создать новую запись
   create = async (req, res) => {
     try {
-      const record = await this.model.create(req.body);
+      const record = await this.repository.create(req.body);
       
       res.status(201).json({
         success: true,
@@ -159,7 +206,7 @@ class BaseController {
   // Обновить запись
   update = async (req, res) => {
     try {
-      const record = await this.model.findByPk(req.params.id);
+      const record = await this.repository.update(req.params.id, req.body);
       
       if (!record) {
         return res.status(404).json({
@@ -168,7 +215,6 @@ class BaseController {
         });
       }
       
-      await record.update(req.body);
       res.json({
         success: true,
         data: record
@@ -184,16 +230,15 @@ class BaseController {
   // Удалить запись
   delete = async (req, res) => {
     try {
-      const record = await this.model.findByPk(req.params.id);
+      const deleted = await this.repository.delete(req.params.id);
       
-      if (!record) {
+      if (!deleted) {
         return res.status(404).json({
           success: false,
           error: 'Запись не найдена'
         });
       }
       
-      await record.destroy();
       res.json({
         success: true,
         message: 'Запись успешно удалена'

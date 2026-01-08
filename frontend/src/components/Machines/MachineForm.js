@@ -4,7 +4,9 @@ import {
   Box,
   Alert,
   DialogActions,
-  Typography
+  Typography,
+  // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js
+  // TextField
 } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import { createMachine, updateMachine, fetchMachines } from '../../store/slices/machinesSlice';
@@ -12,6 +14,26 @@ import { createMachine, updateMachine, fetchMachines } from '../../store/slices/
 const MachineForm = ({ machine, onClose }) => {
   const dispatch = useDispatch();
   const [submitError, setSubmitError] = useState('');
+  
+  // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js
+  // const [formData, setFormData] = useState({
+  //   serial_number: '',
+  //   name: ''
+  // });
+  
+  // useEffect(() => {
+  //   if (machine) {
+  //     setFormData({
+  //       serial_number: machine.serial_number || '',
+  //       name: machine.name || ''
+  //     });
+  //   } else {
+  //     setFormData({
+  //       serial_number: '',
+  //       name: ''
+  //     });
+  //   }
+  // }, [machine]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,10 +41,25 @@ const MachineForm = ({ machine, onClose }) => {
 
     try {
       if (machine) {
+        // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js
+        // await dispatch(updateMachine({ 
+        //   id: machine.id, 
+        //   data: {
+        //     serial_number: formData.serial_number.trim(),
+        //     name: formData.name.trim()
+        //   }
+        // })).unwrap();
+        // ТЕКУЩИЙ КОД (до миграции):
         // Для машины нет полей для редактирования, только ID
         // Но на случай если в будущем появятся поля
         await dispatch(updateMachine({ id: machine.id, data: {} })).unwrap();
       } else {
+        // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js
+        // await dispatch(createMachine({
+        //   serial_number: formData.serial_number.trim(),
+        //   name: formData.name.trim()
+        // })).unwrap();
+        // ТЕКУЩИЙ КОД (до миграции):
         // Создание новой машины - просто пустой объект, ID генерируется на сервере
         await dispatch(createMachine({})).unwrap();
       }
@@ -41,6 +78,26 @@ const MachineForm = ({ machine, onClose }) => {
           <Alert severity="error">{submitError}</Alert>
         )}
 
+        {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js */}
+        {/* Поля для серийного номера и названия */}
+        {/* <TextField
+          label="Серийный номер"
+          value={formData.serial_number}
+          onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+          fullWidth
+          required
+          helperText="Уникальный серийный номер станка"
+        />
+        <TextField
+          label="Название станка"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          fullWidth
+          required
+          helperText="Описательное название станка"
+        /> */}
+        
+        {/* ТЕКУЩИЙ КОД (до миграции): */}
         {machine ? (
           <Typography variant="body1">
             Машина с ID {machine.id}. В данный момент модель машины не содержит дополнительных полей для редактирования.

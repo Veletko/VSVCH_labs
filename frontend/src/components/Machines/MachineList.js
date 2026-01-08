@@ -24,7 +24,6 @@ import { Edit, Delete, Add, Search } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMachines, deleteMachine } from '../../store/slices/machinesSlice';
 import MachineForm from './MachineForm';
-import axios from 'axios';
 
 const MachineList = () => {
   const dispatch = useDispatch();
@@ -54,8 +53,8 @@ const MachineList = () => {
 
   const confirmDelete = async () => {
     try {
-      // Используем прямой вызов API через axios
-      await axios.delete(`/api/machines/${deleteConfirm.id}`);
+      // Используем Redux action для удаления (правильный baseURL через API сервис)
+      await dispatch(deleteMachine(deleteConfirm.id)).unwrap();
       
       // Показываем уведомление об успехе
       setSnackbar({
@@ -65,14 +64,16 @@ const MachineList = () => {
       });
       
       // Обновляем список
-      dispatch(fetchMachines());
+      await dispatch(fetchMachines());
     } catch (error) {
       // Обрабатываем ошибку
       console.error('Error deleting machine:', error);
       
       let errorMessage = 'Ошибка при удалении машины';
-      if (error.response?.data?.error) {
+      if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
       
       setSnackbar({
@@ -99,9 +100,18 @@ const MachineList = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const filteredMachines = machines.filter(machine =>
-    machine.id.toString().includes(searchTerm)
-  );
+  const filteredMachines = machines.filter(machine => {
+    const searchLower = searchTerm.toLowerCase();
+    // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js
+    // Поиск по ID, серийному номеру и названию
+    // return (
+    //   machine?.id?.toString().includes(searchLower) ||
+    //   machine?.serial_number?.toLowerCase().includes(searchLower) ||
+    //   machine?.name?.toLowerCase().includes(searchLower)
+    // );
+    // ТЕКУЩИЙ КОД (до миграции):
+    return machine?.id?.toString().includes(searchTerm);
+  });
 
   if (loading) {
     return (
@@ -130,6 +140,9 @@ const MachineList = () => {
         <TextField
           fullWidth
           variant="outlined"
+          // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js
+          // placeholder="Поиск по ID, серийному номеру или названию..."
+          // ТЕКУЩИЙ КОД (до миграции):
           placeholder="Поиск по ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -150,29 +163,49 @@ const MachineList = () => {
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
+              {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js */}
+              {/* <TableCell>Серийный номер</TableCell> */}
+              {/* <TableCell>Название</TableCell> */}
               <TableCell align="center">Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredMachines.map((machine) => (
-              <TableRow key={machine.id}>
-                <TableCell>{machine.id}</TableCell>
-                <TableCell align="center">
-                  <IconButton
-                    color="primary"
-                    onClick={() => handleEdit(machine)}
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDelete(machine)}
-                  >
-                    <Delete />
-                  </IconButton>
+            {filteredMachines.length === 0 ? (
+              <TableRow>
+                {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js */}
+                {/* colSpan должно быть 4 если раскомментированы колонки серийного номера и названия */}
+                {/* <TableCell colSpan={4} align="center"> */}
+                {/* ТЕКУЩИЙ КОД (до миграции): */}
+                <TableCell colSpan={2} align="center">
+                  <Typography variant="body2" color="text.secondary">
+                    Машины не найдены
+                  </Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredMachines.map((machine) => (
+                <TableRow key={machine.id}>
+                  <TableCell>{machine.id}</TableCell>
+                  {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 20260108032710-add-machine-fields.js */}
+                  {/* <TableCell>{machine.serial_number || '-'}</TableCell> */}
+                  {/* <TableCell>{machine.name || '-'}</TableCell> */}
+                  <TableCell align="center">
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEdit(machine)}
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDelete(machine)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>

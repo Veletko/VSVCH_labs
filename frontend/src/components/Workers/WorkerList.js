@@ -46,9 +46,16 @@ const WorkerList = () => {
     setDeleteConfirm(worker);
   };
 
-  const confirmDelete = () => {
-    dispatch(deleteWorker(deleteConfirm.id));
-    setDeleteConfirm(null);
+  const confirmDelete = async () => {
+    try {
+      await dispatch(deleteWorker(deleteConfirm.id)).unwrap();
+      // Обновляем список после удаления
+      await dispatch(fetchWorkers());
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting worker:', error);
+      // Можно показать ошибку пользователю
+    }
   };
 
   const handleCreate = () => {

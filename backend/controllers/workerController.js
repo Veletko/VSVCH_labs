@@ -1,56 +1,60 @@
 const BaseController = require('./baseController');
-const { Worker, Master } = require('../models/associations');
-const { Op } = require('sequelize');
+const RepositoryFactory = require('../db/factories/RepositoryFactory');
 
 class WorkerController extends BaseController {
   constructor() {
-    super(Worker);
+    super(RepositoryFactory.getWorkerRepository());
   }
 
-  // Получить все записи - ВСЕГДА с информацией о мастере
+  // Переопределяем getAll чтобы всегда включать мастера
   getAll = async (req, res) => {
     try {
       const {
-        page = 1,
-        limit = 10,
+        page,
+        limit,
         sortBy = 'id',
         sortOrder = 'ASC',
         ...filters
       } = req.query;
 
-      const offset = (page - 1) * limit;
+      let result;
+      let count;
 
-      const options = {
-        where: {},
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }],
-        order: [[sortBy, sortOrder]],
-        limit: parseInt(limit),
-        offset: parseInt(offset)
+      if (page && limit) {
+        // Пагинация с мастерами
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        result = await this.repository.findAllWithMaster({
+          where: filters,
+          order: [[sortBy, sortOrder]],
+          limit: parseInt(limit),
+          offset
+        });
+        count = result.count;
+      } else {
+        // Без пагинации, но с мастерами
+        result = await this.repository.findAllWithMaster({
+          where: filters,
+          order: [[sortBy, sortOrder]]
+        });
+        count = result.rows ? result.rows.length : result.count;
+      }
+
+      const response = {
+        success: true,
+        data: result.rows || result,
+        count
       };
 
-      // Применяем фильтры
-      Object.keys(filters).forEach(key => {
-        if (filters[key] && filters[key] !== '') {
-          options.where[key] = filters[key];
-        }
-      });
-
-      const { count, rows } = await Worker.findAndCountAll(options);
-
-      res.json({
-        success: true,
-        data: rows,
-        pagination: {
+      if (page && limit) {
+        response.pagination = {
           current: parseInt(page),
           total: count,
-          pages: Math.ceil(count / limit),
+          pages: Math.ceil(count / parseInt(limit)),
           limit: parseInt(limit)
-        }
-      });
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -59,24 +63,17 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Получить все записи с сортировкой - ВСЕГДА с информацией о мастере
+  // Переопределяем getAllSorted чтобы включать мастера
   getAllSorted = async (req, res) => {
     try {
       const { sortBy = 'id', sortOrder = 'ASC' } = req.query;
-
-      const records = await Worker.findAll({
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }],
+      const result = await this.repository.findAllWithMaster({
         order: [[sortBy, sortOrder]]
       });
-      
       res.json({
         success: true,
-        data: records,
-        count: records.length
+        data: result.rows || result,
+        count: result.count || (result.rows ? result.rows.length : 0)
       });
     } catch (error) {
       res.status(500).json({
@@ -86,7 +83,7 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Получить все записи с фильтрацией - ВСЕГДА с информацией о мастере
+  // Переопределяем getAllFiltered чтобы включать мастера
   getAllFiltered = async (req, res) => {
     try {
       const where = {};
@@ -96,19 +93,11 @@ class WorkerController extends BaseController {
         }
       });
 
-      const records = await Worker.findAll({ 
-        where,
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }]
-      });
-      
+      const result = await this.repository.findAllWithMaster({ where });
       res.json({
         success: true,
-        data: records,
-        count: records.length
+        data: result.rows || result,
+        count: result.count || (result.rows ? result.rows.length : 0)
       });
     } catch (error) {
       res.status(500).json({
@@ -118,92 +107,19 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Поиск записей - ВСЕГДА с информацией о мастере
-  search = async (req, res) => {
-    try {
-      const { q, field = 'last_name' } = req.query;
-      
-      if (!q) {
-        return res.status(400).json({
-          success: false,
-          error: 'Поисковый запрос обязателен'
-        });
-      }
-
-      const records = await Worker.findAll({
-        where: {
-          [field]: {
-            [Op.like]: `%${q}%`
-          }
-        },
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }]
-      });
-
-      res.json({
-        success: true,
-        data: records,
-        count: records.length
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  };
-
-  // Получить запись по ID - ВСЕГДА с информацией о мастере
+  // Переопределяем getById чтобы включать мастера
   getById = async (req, res) => {
     try {
-      const record = await Worker.findByPk(req.params.id, {
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }]
-      });
-      
-      if (!record) {
-        return res.status(404).json({
-          success: false,
-          error: 'Рабочий не найден'
-        });
-      }
-      
-      res.json({
-        success: true,
-        data: record
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  };
+      const { id } = req.params;
+      const worker = await this.repository.findByIdWithMaster(id);
 
-  // Получить рабочего с информацией о мастере (специальный метод)
-  getWithMaster = async (req, res) => {
-    try {
-      const worker = await Worker.findByPk(req.params.id, {
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }]
-      });
-      
       if (!worker) {
         return res.status(404).json({
           success: false,
           error: 'Рабочий не найден'
         });
       }
-      
+
       res.json({
         success: true,
         data: worker
@@ -216,21 +132,35 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Получить всех рабочих с мастерами (дополнительный метод)
+  // Получить всех рабочих с их мастерами (для обратной совместимости)
   getAllWithMaster = async (req, res) => {
     try {
-      const records = await Worker.findAll({
-        include: [{
-          model: Master,
-          as: 'master',
-          attributes: ['id', 'last_name', 'first_name', 'middle_name']
-        }]
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'id',
+        sortOrder = 'ASC',
+        ...filters
+      } = req.query;
+
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      const result = await this.repository.findAllWithMaster({
+        where: filters,
+        order: [[sortBy, sortOrder]],
+        limit: parseInt(limit),
+        offset
       });
-      
+
       res.json({
         success: true,
-        data: records,
-        count: records.length
+        data: result.rows,
+        pagination: {
+          current: parseInt(page),
+          total: result.count,
+          pages: Math.ceil(result.count / parseInt(limit)),
+          limit: parseInt(limit)
+        }
       });
     } catch (error) {
       res.status(500).json({
@@ -240,14 +170,21 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Создать новую запись
+  // Получить рабочего с мастером по ID (алиас для getById)
+  getWithMaster = async (req, res) => {
+    return this.getById(req, res);
+  };
+
+  // Переопределяем create чтобы возвращать рабочего с мастером
   create = async (req, res) => {
     try {
-      const record = await Worker.create(req.body);
+      const record = await this.repository.create(req.body);
+      // Получаем созданного рабочего с мастером
+      const workerWithMaster = await this.repository.findByIdWithMaster(record.id);
       
       res.status(201).json({
         success: true,
-        data: record
+        data: workerWithMaster || record
       });
     } catch (error) {
       res.status(400).json({
@@ -257,10 +194,10 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Обновить запись
+  // Переопределяем update чтобы возвращать рабочего с мастером
   update = async (req, res) => {
     try {
-      const record = await Worker.findByPk(req.params.id);
+      const record = await this.repository.update(req.params.id, req.body);
       
       if (!record) {
         return res.status(404).json({
@@ -269,10 +206,12 @@ class WorkerController extends BaseController {
         });
       }
       
-      await record.update(req.body);
+      // Получаем обновленного рабочего с мастером
+      const workerWithMaster = await this.repository.findByIdWithMaster(req.params.id);
+      
       res.json({
         success: true,
-        data: record
+        data: workerWithMaster || record
       });
     } catch (error) {
       res.status(400).json({
@@ -282,38 +221,39 @@ class WorkerController extends BaseController {
     }
   };
 
-  // Удалить запись
-  delete = async (req, res) => {
+  // Переопределяем search чтобы включать мастера
+  search = async (req, res) => {
     try {
-      const record = await Worker.findByPk(req.params.id);
+      const { q, field, operator = 'OR' } = req.query;
       
-      if (!record) {
-        return res.status(404).json({
+      if (!q) {
+        return res.status(400).json({
           success: false,
-          error: 'Рабочий не найден'
+          error: 'Поисковый запрос обязателен'
         });
       }
-      
-      await record.destroy();
-      res.json({
-        success: true,
-        message: 'Рабочий успешно удален'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  };
 
-  // Проверить существование записи
-  exists = async (req, res) => {
-    try {
-      const record = await Worker.findByPk(req.params.id);
+      // Определяем поля для поиска
+      const fields = field ? [field] : ['last_name', 'first_name', 'middle_name'];
+
+      // Используем поиск через репозиторий, но с включением мастера
+      const { Op } = require('sequelize');
+      const whereClause = {
+        [Op[operator === 'AND' ? 'and' : 'or']]: fields.map(field => ({
+          [field]: {
+            [Op.iLike]: `%${q}%`
+          }
+        }))
+      };
+
+      const result = await this.repository.findAllWithMaster({
+        where: whereClause
+      });
+
       res.json({
         success: true,
-        exists: !!record
+        data: result.rows || result,
+        count: result.count || (result.rows ? result.rows.length : 0)
       });
     } catch (error) {
       res.status(500).json({
@@ -324,20 +264,4 @@ class WorkerController extends BaseController {
   };
 }
 
-// Создаем экземпляр контроллера
-const workerController = new WorkerController();
-
-// Экспортируем методы контроллера
-module.exports = {
-  getAll: workerController.getAll,
-  getAllSorted: workerController.getAllSorted,
-  getAllFiltered: workerController.getAllFiltered,
-  search: workerController.search,
-  getById: workerController.getById,
-  exists: workerController.exists,
-  create: workerController.create,
-  update: workerController.update,
-  delete: workerController.delete,
-  getWithMaster: workerController.getWithMaster,
-  getAllWithMaster: workerController.getAllWithMaster
-};
+module.exports = new WorkerController();

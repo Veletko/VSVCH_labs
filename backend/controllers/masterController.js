@@ -1,9 +1,9 @@
 const BaseController = require('./baseController');
-const { Master, MaintenanceHistory, Machine } = require('../models/associations');
+const RepositoryFactory = require('../db/factories/RepositoryFactory');
 
 class MasterController extends BaseController {
   constructor() {
-    super(Master);
+    super(RepositoryFactory.getMasterRepository());
   }
 
   // Получить всех мастеров с их обслуживаниями
@@ -16,29 +16,20 @@ class MasterController extends BaseController {
         sortOrder = 'ASC'
       } = req.query;
 
-      const offset = (page - 1) * limit;
-
-      const { count, rows } = await Master.findAndCountAll({
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          include: [{
-            model: Machine,
-            as: 'machine'
-          }]
-        }],
-        order: [[sortBy, sortOrder]],
+      const result = await this.repository.findAllWithMaintenance({
+        page: parseInt(page),
         limit: parseInt(limit),
-        offset: parseInt(offset)
+        sortBy,
+        sortOrder
       });
 
       res.json({
         success: true,
-        data: rows,
+        data: result.rows,
         pagination: {
           current: parseInt(page),
-          total: count,
-          pages: Math.ceil(count / limit),
+          total: result.count,
+          pages: Math.ceil(result.count / parseInt(limit)),
           limit: parseInt(limit)
         }
       });
@@ -50,27 +41,19 @@ class MasterController extends BaseController {
     }
   };
 
-  // Получить мастера с его обслуживаниями
+  // Получить мастера с обслуживанием по ID
   getWithMaintenance = async (req, res) => {
     try {
-      const master = await Master.findByPk(req.params.id, {
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          include: [{
-            model: Machine,
-            as: 'machine'
-          }]
-        }]
-      });
-      
+      const { id } = req.params;
+      const master = await this.repository.findByIdWithMaintenance(id);
+
       if (!master) {
         return res.status(404).json({
           success: false,
           error: 'Мастер не найден'
         });
       }
-      
+
       res.json({
         success: true,
         data: master
@@ -83,37 +66,22 @@ class MasterController extends BaseController {
     }
   };
 
-  // Статистика по мастеру
+  // Получить статистику по мастеру
   getStatistics = async (req, res) => {
     try {
-      const master = await Master.findByPk(req.params.id, {
-        include: [{
-          model: MaintenanceHistory,
-          as: 'maintenanceHistory',
-          attributes: ['id', 'state', 'start_date', 'end_date']
-        }]
-      });
-      
-      if (!master) {
+      const { id } = req.params;
+      const statistics = await this.repository.getStatistics(id);
+
+      if (!statistics) {
         return res.status(404).json({
           success: false,
           error: 'Мастер не найден'
         });
       }
-      
-      const stats = {
-        totalMaintenance: master.maintenanceHistory.length,
-        completedMaintenance: master.maintenanceHistory.filter(m => m.state === 'completed').length,
-        inProgressMaintenance: master.maintenanceHistory.filter(m => m.state === 'in_progress').length,
-        plannedMaintenance: master.maintenanceHistory.filter(m => m.state === 'planned').length,
-        lastMaintenance: master.maintenanceHistory
-          .filter(m => m.state === 'completed')
-          .sort((a, b) => new Date(b.end_date) - new Date(a.end_date))[0] || null
-      };
-      
+
       res.json({
         success: true,
-        data: stats
+        data: statistics
       });
     } catch (error) {
       res.status(500).json({
@@ -124,23 +92,4 @@ class MasterController extends BaseController {
   };
 }
 
-// Создаем экземпляр контроллера
-const masterController = new MasterController();
-
-// Экспортируем методы контроллера
-module.exports = {
-  getAll: masterController.getAll,
-  getAllSorted: masterController.getAllSorted,
-  getAllFiltered: masterController.getAllFiltered,
-  search: masterController.search,
-  getById: masterController.getById,
-  exists: masterController.exists,
-  create: masterController.create,
-  update: masterController.update,
-  delete: masterController.delete,
-  getAllWithMaintenance: masterController.getAllWithMaintenance,
-  getWithMaintenance: masterController.getWithMaintenance,
-  getStatistics: masterController.getStatistics
-};
-
-module.exports = masterController;
+module.exports = new MasterController();
