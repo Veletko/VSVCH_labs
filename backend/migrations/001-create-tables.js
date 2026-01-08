@@ -105,12 +105,33 @@ class CreateTablesMigration {
         console.log('  ℹ️  Индексы для maintenance_histories уже существуют');
       }
       
+      // 5. СОЗДАЕМ КОЛЛЕКЦИЮ WORKSHOPS (цеха)
+      console.log('\n5. Проверяю коллекцию workshops...');
+      const workshopsCollections = await db.listCollections({ name: 'workshops' }).toArray();
+      if (workshopsCollections.length === 0) {
+        await db.createCollection('workshops');
+        console.log('  ✅ Коллекция workshops создана');
+      } else {
+        console.log('  ℹ️  Коллекция workshops уже существует');
+      }
+      const workshopsCollection = db.collection('workshops');
+      
+      // Индексы для workshops
+      try {
+        await workshopsCollection.createIndex({ name: 1 }, { unique: true });
+        await workshopsCollection.createIndex({ 'elements.machine_id': 1 });
+        console.log('  ✅ Индексы для workshops созданы/проверены');
+      } catch (error) {
+        console.log('  ℹ️  Индексы для workshops уже существуют');
+      }
+      
       console.log('\n🎉 БАЗА ДАННЫХ СОЗДАНА УСПЕШНО!');
       console.log('📊 Коллекции:');
       console.log('   - masters');
       console.log('   - workers');
       console.log('   - machines');
       console.log('   - maintenance_histories');
+      console.log('   - workshops');
       console.log('\n✅ Все индексы созданы');
       
     } catch (error) {

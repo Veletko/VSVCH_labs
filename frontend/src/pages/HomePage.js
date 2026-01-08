@@ -1,13 +1,17 @@
 import React from 'react';
 import { Typography, Paper, Box, Grid, Card, CardContent } from '@mui/material';
-import { People, Engineering, Build, History } from '@mui/icons-material';
+import { People, Engineering, Build, History, Factory } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  
   const stats = [
     { icon: <People />, label: 'Мастера', path: '/masters' },
     { icon: <Engineering />, label: 'Рабочие', path: '/workers' },
     { icon: <Build />, label: 'Машины', path: '/machines' },
     { icon: <History />, label: 'Обслуживание', path: '/maintenance' },
+    { icon: <Factory />, label: 'Планировщик цеха', path: '/workshop' },
   ];
 
   return (
@@ -24,6 +28,7 @@ const HomePage = () => {
         {stats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card 
+              onClick={() => navigate(stat.path)}
               sx={{ 
                 textAlign: 'center',
                 cursor: 'pointer',

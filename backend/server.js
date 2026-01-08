@@ -15,6 +15,7 @@ const masterRoutes = require('./routes/masters');
 const workerRoutes = require('./routes/workers');
 const machineRoutes = require('./routes/machines');
 const maintenanceRoutes = require('./routes/maintenance');
+const workshopRoutes = require('./routes/workshops');
 const authRoutes = require('./routes/auth');
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/masters', masterRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/machines', machineRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/workshops', workshopRoutes);
 
 // Тестовый маршрут
 app.get('/api/health', (req, res) => {

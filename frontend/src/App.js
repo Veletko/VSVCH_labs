@@ -16,6 +16,7 @@ import MastersPage from './pages/MastersPage';
 import WorkersPage from './pages/WorkersPage';
 import MachinesPage from './pages/MachinesPage';
 import MaintenancePage from './pages/MaintenancePage';
+import WorkshopPage from './pages/WorkshopPage';
 
 const theme = createTheme({
   palette: {
@@ -69,6 +70,12 @@ function AppContent() {
           <Route path="/maintenance" element={
             <PrivateRoute>
               <MaintenancePage />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/workshop" element={
+            <PrivateRoute>
+              <WorkshopPage />
             </PrivateRoute>
           } />
           

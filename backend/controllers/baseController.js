@@ -1,4 +1,3 @@
-// controllers/baseController.js
 const mongoose = require('mongoose');
 
 class BaseController {
@@ -8,20 +7,16 @@ class BaseController {
 
   // Вспомогательная функция для конвертации ID в ObjectId
   convertToObjectId(value) {
-    // Если значение null, пустая строка или undefined - возвращаем null
-    if (!value || value === '' || value === 'null' || value === null) return null;
-    // Если это уже ObjectId, возвращаем как есть
+    if (!value) return value;
     if (value instanceof mongoose.Types.ObjectId) return value;
-    // Если это валидная строка ObjectId, конвертируем
-    if (typeof value === 'string' && value.trim() !== '' && mongoose.Types.ObjectId.isValid(value)) {
+    if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
       return new mongoose.Types.ObjectId(value);
     }
-    // Иначе возвращаем null (невалидное значение)
-    return null;
+    return value;
   }
 
   // Получить все записи
-   getAll = async (req, res) => {
+  getAll = async (req, res) => {
     try {
       const {
         page = 1,
@@ -34,22 +29,26 @@ class BaseController {
       const offset = (page - 1) * limit;
       const sortDirection = sortOrder.toLowerCase() === 'desc' ? -1 : 1;
 
+      // Обрабатываем фильтры
       const filter = {};
       Object.keys(filters).forEach(key => {
         if (filters[key] && filters[key] !== '') {
           let value = filters[key];
-          // Если поле заканчивается на _id, конвертируем в ObjectId
-          if (key.endsWith('_id') || key === '_id' || key === 'id') {
+          // Если поле заканчивается на _id или это _id, конвертируем в ObjectId
+          if (key.endsWith('_id') || key === '_id') {
             value = this.convertToObjectId(value);
+            if (value !== null && value !== '') {
+              filter[key] = value;
+            }
+          } else {
+            filter[key] = value;
           }
-          const mongoKey = key === 'id' ? '_id' : key;
-          filter[mongoKey] = value;
         }
       });
 
       const [records, count] = await Promise.all([
         this.model.find(filter)
-          .sort({ [sortBy === 'id' ? '_id' : sortBy]: sortDirection })
+          .sort({ [sortBy]: sortDirection })
           .skip(parseInt(offset))
           .limit(parseInt(limit)),
         this.model.countDocuments(filter)
@@ -66,9 +65,10 @@ class BaseController {
         }
       });
     } catch (error) {
+      console.error('Error fetching records:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при получении записей'
       });
     }
   };
@@ -76,21 +76,22 @@ class BaseController {
   // Получить все записи с сортировкой
   getAllSorted = async (req, res) => {
     try {
-      const { sortBy = 'id', sortOrder = 'asc' } = req.query;
-      // Преобразуем 'id' в '_id' для MongoDB
-      const mongoSortBy = sortBy === 'id' ? '_id' : sortBy;
+      const { sortBy = '_id', sortOrder = 'asc' } = req.query;
       const sortDirection = sortOrder.toLowerCase() === 'desc' ? -1 : 1;
-      
-      const records = await this.model.find().sort({ [mongoSortBy]: sortDirection });
+
+      const records = await this.model.find()
+        .sort({ [sortBy]: sortDirection });
+
       res.json({
         success: true,
         data: records,
         count: records.length
       });
     } catch (error) {
+      console.error('Error fetching sorted records:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при получении записей'
       });
     }
   };
@@ -98,32 +99,34 @@ class BaseController {
   // Получить все записи с фильтрацией
   getAllFiltered = async (req, res) => {
     try {
-      const where = {};
+      const filter = {};
       Object.keys(req.query).forEach(key => {
         if (req.query[key] && req.query[key] !== '') {
-          // Преобразуем 'id' в '_id' для MongoDB
-          const mongoKey = key === 'id' ? '_id' : key;
           let value = req.query[key];
-          
-          // Если поле заканчивается на _id, конвертируем в ObjectId
-          if (mongoKey.endsWith('_id') || mongoKey === '_id') {
+          // Если поле заканчивается на _id или это _id, конвертируем в ObjectId
+          if (key.endsWith('_id') || key === '_id') {
             value = this.convertToObjectId(value);
+            if (value !== null && value !== '') {
+              filter[key] = value;
+            }
+          } else {
+            filter[key] = value;
           }
-          
-          where[mongoKey] = value;
         }
       });
 
-      const records = await this.model.find(where);
+      const records = await this.model.find(filter);
+
       res.json({
         success: true,
         data: records,
         count: records.length
       });
     } catch (error) {
+      console.error('Error fetching filtered records:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при получении записей'
       });
     }
   };
@@ -131,7 +134,7 @@ class BaseController {
   // Поиск записей
   search = async (req, res) => {
     try {
-      const { q, field = 'last_name' } = req.query;
+      const { q, field = 'name' } = req.query;
       
       if (!q) {
         return res.status(400).json({
@@ -140,12 +143,11 @@ class BaseController {
         });
       }
 
-      // Преобразуем 'id' в '_id' для MongoDB
-      const mongoField = field === 'id' ? '_id' : field;
-      
-      const records = await this.model.find({
-        [mongoField]: { $regex: q, $options: 'i' }
-      });
+      const filter = {
+        [field]: { $regex: q, $options: 'i' }
+      };
+
+      const records = await this.model.find(filter);
 
       res.json({
         success: true,
@@ -153,9 +155,10 @@ class BaseController {
         count: records.length
       });
     } catch (error) {
+      console.error('Error searching records:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при поиске записей'
       });
     }
   };
@@ -163,15 +166,17 @@ class BaseController {
   // Получить запись по ID
   getById = async (req, res) => {
     try {
-      // Валидируем и конвертируем ID
-      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+      const { id } = req.params;
+      
+      // Валидируем ID
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
           success: false,
           error: 'Неверный формат ID'
         });
       }
-      
-      const record = await this.model.findById(req.params.id);
+
+      const record = await this.model.findById(id);
       
       if (!record) {
         return res.status(404).json({
@@ -185,6 +190,7 @@ class BaseController {
         data: record
       });
     } catch (error) {
+      console.error('Error fetching record by ID:', error);
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -193,7 +199,7 @@ class BaseController {
       }
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при получении записи'
       });
     }
   };
@@ -201,29 +207,26 @@ class BaseController {
   // Проверить существование записи
   exists = async (req, res) => {
     try {
+      const { id } = req.params;
+      
       // Валидируем ID
-      if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
-        return res.json({
-          success: true,
-          exists: false
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверный формат ID'
         });
       }
-      
-      const record = await this.model.findById(req.params.id);
+
+      const record = await this.model.findById(id);
       res.json({
         success: true,
         exists: !!record
       });
     } catch (error) {
-      if (error.name === 'CastError') {
-        return res.json({
-          success: true,
-          exists: false
-        });
-      }
+      console.error('Error checking record existence:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при проверке существования записи'
       });
     }
   };
@@ -269,15 +272,35 @@ class BaseController {
         });
       }
       
-      // Конвертируем поля с _id в ObjectId
+      // Конвертируем поля с _id в ObjectId (рекурсивно для вложенных объектов)
       const data = { ...req.body };
-      Object.keys(data).forEach(key => {
-        if (key.endsWith('_id')) {
-          // Конвертируем в ObjectId (функция сама обработает null/пустые значения)
-          data[key] = this.convertToObjectId(data[key]);
-        }
-      });
+      const convertIdsInObject = (obj) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        
+        Object.keys(obj).forEach(key => {
+          if (key.endsWith('_id')) {
+            // Конвертируем в ObjectId (функция сама обработает null/пустые значения)
+            obj[key] = this.convertToObjectId(obj[key]);
+          } else if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+            // Рекурсивно обрабатываем вложенные объекты
+            convertIdsInObject(obj[key]);
+          } else if (Array.isArray(obj[key])) {
+            // Обрабатываем массивы
+            obj[key] = obj[key].map(item => {
+              if (typeof item === 'object' && item !== null) {
+                return convertIdsInObject({ ...item });
+              }
+              return item;
+            });
+          }
+        });
+        
+        return obj;
+      };
       
+      convertIdsInObject(data);
+      
+      // Mongoose автоматически обрабатывает вложенные объекты
       const record = await this.model.findByIdAndUpdate(
         req.params.id,
         data,
@@ -337,6 +360,7 @@ class BaseController {
         message: 'Запись успешно удалена'
       });
     } catch (error) {
+      console.error('Error deleting record:', error);
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -345,7 +369,7 @@ class BaseController {
       }
       res.status(500).json({
         success: false,
-        error: error.message
+        error: error.message || 'Ошибка при удалении записи'
       });
     }
   };

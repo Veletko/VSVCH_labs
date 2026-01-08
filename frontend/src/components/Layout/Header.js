@@ -9,7 +9,8 @@ const Header = () => {
     { path: '/masters', label: 'Мастера' },
     { path: '/workers', label: 'Рабочие' },
     { path: '/machines', label: 'Машины' },
-    { path: '/maintenance', label: 'Обслуживание' }
+    { path: '/maintenance', label: 'Обслуживание' },
+    { path: '/workshop', label: 'Планировщик цеха' }
   ];
 
   return (

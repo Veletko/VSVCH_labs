@@ -104,4 +104,14 @@ export const maintenanceAPI = {
   getByState: (state, params) => api.get(`/maintenance/state/${state}`, { params })
 };
 
+// Workshops API
+export const workshopsAPI = {
+  getAll: () => api.get('/workshops'),
+  getById: (id) => api.get(`/workshops/${id}`),
+  create: (data) => api.post('/workshops', data),
+  update: (id, data) => api.put(`/workshops/${id}`, data),
+  saveLayout: (id, data) => api.post(`/workshops/${id}/layout`, data),
+  delete: (id) => api.delete(`/workshops/${id}`)
+};
+
 export default api;
