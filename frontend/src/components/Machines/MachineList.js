@@ -112,6 +112,15 @@ const MachineList = () => {
   };
 
   const filteredMachines = machines.filter(machine => {
+    const searchLower = searchTerm.toLowerCase();
+    // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 003-add-machine-fields.js
+    // Поиск по ID, серийному номеру и названию
+    // return (
+    //   machine?._id?.toString().includes(searchLower) ||
+    //   machine?.serial_number?.toLowerCase().includes(searchLower) ||
+    //   machine?.name?.toLowerCase().includes(searchLower)
+    // );
+    // ТЕКУЩИЙ КОД (до миграции):
     return machine?._id?.toString().includes(searchTerm);
   });
 
@@ -142,6 +151,9 @@ const MachineList = () => {
         <TextField
           fullWidth
           variant="outlined"
+          // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 003-add-machine-fields.js
+          // placeholder="Поиск по ID, серийному номеру или названию..."
+          // ТЕКУЩИЙ КОД (до миграции):
           placeholder="Поиск по ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -162,12 +174,19 @@ const MachineList = () => {
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
+              {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 003-add-machine-fields.js */}
+              {/* <TableCell>Серийный номер</TableCell> */}
+              {/* <TableCell>Название</TableCell> */}
               <TableCell align="center">Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredMachines.length === 0 ? (
               <TableRow>
+                {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 003-add-machine-fields.js */}
+                {/* colSpan должно быть 4 если раскомментированы колонки серийного номера и названия */}
+                {/* <TableCell colSpan={4} align="center"> */}
+                {/* ТЕКУЩИЙ КОД (до миграции): */}
                 <TableCell colSpan={2} align="center">
                   <Typography variant="body2" color="text.secondary">
                     Машины не найдены
@@ -178,6 +197,9 @@ const MachineList = () => {
               filteredMachines.map((machine) => (
                 <TableRow key={machine._id}>
                   <TableCell>{machine._id}</TableCell>
+                  {/* РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 003-add-machine-fields.js */}
+                  {/* <TableCell>{machine.serial_number || '-'}</TableCell> */}
+                  {/* <TableCell>{machine.name || '-'}</TableCell> */}
                     <TableCell align="center">
                       <IconButton
                         color="primary"

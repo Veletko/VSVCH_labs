@@ -3,6 +3,8 @@
 require('dotenv').config();
 const CreateTablesMigration = require('./001-create-tables');
 const FixIdsMigration = require('./002-fix-ids');
+// РАСКОММЕНТИРУЙТЕ ПОСЛЕ ПОДГОТОВКИ МИГРАЦИИ 003-add-machine-fields.js
+// const AddMachineFieldsMigration = require('./003-add-machine-fields');
 
 async function main() {
   console.log('🏭 Factory Database Migration Tool');
@@ -26,6 +28,12 @@ async function main() {
     console.log('\n📋 Шаг 2: Исправление ID...\n');
     const fixIdsMigration = new FixIdsMigration();
     await fixIdsMigration.run();
+    
+    // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ПОДГОТОВКИ МИГРАЦИИ 003-add-machine-fields.js
+    // Добавляем поля серийного номера и названия к машинам
+    // console.log('\n📋 Шаг 3: Добавление полей к машинам...\n');
+    // const addMachineFieldsMigration = new AddMachineFieldsMigration();
+    // await addMachineFieldsMigration.run();
     
     console.log('\n✅ База данных готова к использованию!');
     console.log('📁 Сервер можно запускать командой: node server.js');

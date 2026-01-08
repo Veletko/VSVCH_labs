@@ -29,7 +29,21 @@ const machineSchema = new mongoose.Schema({
       type: Number,
       default: 100
     }
-  }
+  },
+  // РАСКОММЕНТИРУЙТЕ ПОСЛЕ ВЫПОЛНЕНИЯ МИГРАЦИИ 003-add-machine-fields.js
+  // Серийный номер станка
+  // serial_number: {
+  //   type: String,
+  //   trim: true,
+  //   sparse: true, // Разрешаем множественные null значения
+  //   index: true
+  // },
+  // Название станка
+  // name: {
+  //   type: String,
+  //   trim: true,
+  //   default: ''
+  // }
 }, {
   timestamps: true,
   versionKey: '__v'
