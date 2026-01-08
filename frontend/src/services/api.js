@@ -104,4 +104,17 @@ export const maintenanceAPI = {
   getByState: (state, params) => api.get(`/maintenance/state/${state}`, { params })
 };
 
+// Workshops API
+export const workshopsAPI = {
+  getAll: (params) => api.get('/workshops', { params }),
+  getAllSorted: (params) => api.get('/workshops/all', { params }),
+  getAllFiltered: (params) => api.get('/workshops/filtered', { params }),
+  getById: (id) => api.get(`/workshops/${id}`),
+  exists: (id) => api.get(`/workshops/${id}/exists`),
+  create: (data) => api.post('/workshops', data),
+  update: (id, data) => api.put(`/workshops/${id}`, data),
+  delete: (id) => api.delete(`/workshops/${id}`),
+  search: (params) => api.get('/workshops/search', { params })
+};
+
 export default api;

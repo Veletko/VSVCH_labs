@@ -2,6 +2,7 @@ const Master = require('./Master');
 const Worker = require('./Worker');
 const Machine = require('./Machine');
 const MaintenanceHistory = require('./MaintenanceHistory');
+const Workshop = require('./Workshop');
 
 // Мастер имеет много рабочих
 Master.hasMany(Worker, {
@@ -49,5 +50,6 @@ module.exports = {
   Master,
   Worker,
   Machine,
-  MaintenanceHistory
+  MaintenanceHistory,
+  Workshop
 };

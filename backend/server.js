@@ -13,7 +13,8 @@ const masterRoutes = require('./routes/masters');
 const workerRoutes = require('./routes/workers');
 const machineRoutes = require('./routes/machines');
 const maintenanceRoutes = require('./routes/maintenance');
-const authRoutes = require('./routes/auth'); // НОВЫЙ ИМПОРТ
+const workshopRoutes = require('./routes/workshops');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,11 +24,12 @@ app.use(cors());
 app.use(express.json());
 
 // Подключаем маршруты
-app.use('/api/auth', authRoutes); // НОВЫЙ МАРШРУТ
+app.use('/api/auth', authRoutes);
 app.use('/api/masters', masterRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/machines', machineRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/workshops', workshopRoutes);
 
 // Тестовый маршрут
 app.get('/api/health', (req, res) => {
@@ -39,7 +41,8 @@ app.get('/api/health', (req, res) => {
       masters: '/api/masters',
       workers: '/api/workers', 
       machines: '/api/machines',
-      maintenance: '/api/maintenance'
+      maintenance: '/api/maintenance',
+      workshops: '/api/workshops'
     }
   });
 });
@@ -66,6 +69,7 @@ const startServer = async () => {
       console.log(`👷 Workers API: http://localhost:${PORT}/api/workers`);
       console.log(`⚙️  Machines API: http://localhost:${PORT}/api/machines`);
       console.log(`📋 Maintenance API: http://localhost:${PORT}/api/maintenance`);
+      console.log(`🏭 Workshops API: http://localhost:${PORT}/api/workshops`);
     });
   } catch (error) {
     console.error('❌ Unable to start server:', error);

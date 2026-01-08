@@ -5,7 +5,7 @@
 const dbType = process.env.DB_TYPE || 'sequelize';
 
 // Импортируем репозитории Sequelize
-let MasterRepository, WorkerRepository, MachineRepository, MaintenanceRepository;
+let MasterRepository, WorkerRepository, MachineRepository, MaintenanceRepository, WorkshopRepository;
 
 try {
   switch (dbType.toLowerCase()) {
@@ -14,6 +14,7 @@ try {
       WorkerRepository = require('../repositories/sequelize/WorkerRepository');
       MachineRepository = require('../repositories/sequelize/MachineRepository');
       MaintenanceRepository = require('../repositories/sequelize/MaintenanceRepository');
+      WorkshopRepository = require('../repositories/sequelize/WorkshopRepository');
       break;
     
     // Для будущей поддержки других БД
@@ -78,6 +79,16 @@ class RepositoryFactory {
       throw new Error('MaintenanceRepository is not available for the selected database type');
     }
     return new MaintenanceRepository();
+  }
+
+  /**
+   * Получить репозиторий схем цеха
+   */
+  static getWorkshopRepository() {
+    if (!WorkshopRepository) {
+      throw new Error('WorkshopRepository is not available for the selected database type');
+    }
+    return new WorkshopRepository();
   }
 
   /**
