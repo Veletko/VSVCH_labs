@@ -8,6 +8,7 @@ import {
 import { Canvas, Rect, Text, Group } from 'fabric';
 import { Delete, Save, Clear, Add, Factory } from '@mui/icons-material';
 import { fetchMachines } from '../../store/slices/machinesSlice';
+import { fetchMaintenanceDetailed } from '../../store/slices/maintenanceSlice';
 import { 
   fetchWorkshops, 
   fetchWorkshopById, 
@@ -21,6 +22,7 @@ const WorkshopPlanner = () => {
   const canvasInstanceRef = useRef(null);
   const dispatch = useDispatch();
   const { items: machines, loading: machinesLoading } = useSelector(state => state.machines);
+  const { itemsDetailed: maintenanceRecords, loading: maintenanceLoading } = useSelector(state => state.maintenance);
   const { items: workshops, currentWorkshop, loading: workshopsLoading } = useSelector(state => state.workshops);
   
   const [selectedTool, setSelectedTool] = useState('select');
@@ -44,9 +46,10 @@ const WorkshopPlanner = () => {
 
     canvasInstanceRef.current = canvas;
 
-    // Загрузка машин и цехов при монтировании
+    // Загрузка машин, цехов и истории обслуживания при монтировании
     dispatch(fetchMachines());
     dispatch(fetchWorkshops());
+    dispatch(fetchMaintenanceDetailed({ limit: 1000 })); // Загружаем все записи для определения последнего состояния
 
     // Обработчик изменения объектов (перемещение, изменение размера)
     canvas.on('object:modified', () => {
@@ -62,6 +65,55 @@ const WorkshopPlanner = () => {
       canvas.dispose();
     };
   }, [dispatch]);
+
+  // Функция для определения цвета станка по состоянию последнего обслуживания
+  const getMachineColor = (machineId) => {
+    // Приводим machineId к строке для надежного сравнения
+    const machineIdStr = String(machineId);
+    
+    if (!maintenanceRecords || maintenanceRecords.length === 0) {
+      return { fill: '#2196F3', stroke: '#1976D2' }; // Синий по умолчанию (запланировано)
+    }
+
+    // Находим все записи обслуживания для данного станка
+    const machineMaintenance = maintenanceRecords.filter(record => {
+      if (!record || !record.machine_id) return false;
+      
+      // Проверяем разные форматы machine_id (объект или строка)
+      const recordMachineId = record.machine_id._id || record.machine_id;
+      const recordMachineIdStr = String(recordMachineId);
+      
+      return recordMachineIdStr === machineIdStr;
+    });
+
+    if (machineMaintenance.length === 0) {
+      return { fill: '#2196F3', stroke: '#1976D2' }; // Синий - запланировано (нет записей)
+    }
+
+    // Сортируем по дате начала (по убыванию), берем самую последнюю
+    const sortedMaintenance = [...machineMaintenance].sort((a, b) => {
+      const dateA = new Date(a.start_date || a.createdAt || 0);
+      const dateB = new Date(b.start_date || b.createdAt || 0);
+      return dateB - dateA; // Сортировка по убыванию (самая последняя первая)
+    });
+
+    const lastMaintenance = sortedMaintenance[0];
+    const state = lastMaintenance.state;
+
+    // Определяем цвет по состоянию
+    switch (state) {
+      case 'planned':
+        return { fill: '#2196F3', stroke: '#1976D2' }; // Синий - запланировано
+      case 'in_progress':
+        return { fill: '#f44336', stroke: '#d32f2f' }; // Красный - в процессе
+      case 'completed':
+        return { fill: '#4caf50', stroke: '#388e3c' }; // Зеленый - завершено
+      case 'cancelled':
+        return { fill: '#9e9e9e', stroke: '#757575' }; // Серый - отменено
+      default:
+        return { fill: '#2196F3', stroke: '#1976D2' }; // Синий по умолчанию
+    }
+  };
 
   // Загрузка схемы цеха на canvas
   useEffect(() => {
@@ -114,13 +166,18 @@ const WorkshopPlanner = () => {
           elementType: 'door',
         });
       } else if (element.elementType === 'machine' && element.machine_id) {
+        const machineId = element.machine_id._id || element.machine_id;
+        const colors = getMachineColor(machineId);
+        
+        console.log('Machine color for', machineId, ':', colors, 'Maintenance records:', maintenanceRecords?.length);
+
         const rect = new Rect({
           left: 0,
           top: 0,
           width: element.position.width,
           height: element.position.height,
-          fill: '#2196F3',
-          stroke: '#1976D2',
+          fill: colors.fill,
+          stroke: colors.stroke,
           strokeWidth: 2,
           rx: 5,
           ry: 5,
@@ -129,7 +186,7 @@ const WorkshopPlanner = () => {
           originY: 'top',
         });
 
-        const machineText = new Text(element.machine_id._id ? element.machine_id._id.substring(0, 8) : 'Machine', {
+        const machineText = new Text(machineId ? String(machineId).substring(0, 8) : 'Machine', {
           left: element.position.width / 2,
           top: element.position.height / 2,
           fontSize: 12,
@@ -148,7 +205,7 @@ const WorkshopPlanner = () => {
           lockRotation: true,
           elementIndex: index,
           elementType: 'machine',
-          machineId: element.machine_id._id || element.machine_id,
+          machineId: machineId,
         });
       }
 
@@ -158,7 +215,7 @@ const WorkshopPlanner = () => {
     });
 
     canvas.renderAll();
-  }, [currentWorkshop]);
+  }, [currentWorkshop, maintenanceRecords]);
 
   // Сохранение схемы из canvas в цех
   const saveCanvasToWorkshop = async () => {
@@ -349,13 +406,16 @@ const WorkshopPlanner = () => {
       return;
     }
 
+    // Определяем цвет по состоянию последнего обслуживания
+    const colors = getMachineColor(machine._id);
+
     const rect = new Rect({
       left: 0,
       top: 0,
       width: 100,
       height: 100,
-      fill: '#2196F3',
-      stroke: '#1976D2',
+      fill: colors.fill,
+      stroke: colors.stroke,
       strokeWidth: 2,
       rx: 5,
       ry: 5,
@@ -433,9 +493,60 @@ const WorkshopPlanner = () => {
     }
 
     await saveCanvasToWorkshop();
+    
+    // Обновляем историю обслуживания для обновления цветов станков
+    dispatch(fetchMaintenanceDetailed({ limit: 1000 }));
+    
+    // Перезагружаем схему цеха для обновления цветов
+    if (workshopId) {
+      await dispatch(fetchWorkshopById(workshopId)).unwrap();
+    }
+    
     setError('');
     alert('Схема цеха сохранена!');
   };
+
+  // Обновление цветов станков при изменении истории обслуживания
+  useEffect(() => {
+    if (!canvasInstanceRef.current || !currentWorkshop || !maintenanceRecords || maintenanceRecords.length === 0) return;
+
+    const canvas = canvasInstanceRef.current;
+    const objects = canvas.getObjects();
+
+    // Обновляем цвета всех станков на canvas
+    let needsUpdate = false;
+    objects.forEach((obj) => {
+      if (obj.elementType === 'machine' && obj.machineId) {
+        const colors = getMachineColor(obj.machineId);
+        
+        // Если это группа, обновляем цвет прямоугольника внутри
+        if (obj.type === 'group' && obj._objects && obj._objects.length > 0) {
+          // Ищем прямоугольник в группе
+          const rect = obj._objects.find(o => {
+            // Проверяем, что это прямоугольник (имеет width и height, но не текст)
+            return o.width !== undefined && o.height !== undefined && o.text === undefined;
+          });
+          
+          if (rect) {
+            const currentFill = rect.fill;
+            const currentStroke = rect.stroke;
+            
+            if (currentFill !== colors.fill || currentStroke !== colors.stroke) {
+              rect.set({
+                fill: colors.fill,
+                stroke: colors.stroke
+              });
+              needsUpdate = true;
+            }
+          }
+        }
+      }
+    });
+
+    if (needsUpdate) {
+      canvas.renderAll();
+    }
+  }, [maintenanceRecords]);
 
   return (
     <Box sx={{ p: 2 }}>
